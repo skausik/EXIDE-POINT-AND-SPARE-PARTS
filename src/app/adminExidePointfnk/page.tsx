@@ -720,10 +720,6 @@ function SiteContentEditor({ onToast }: { onToast: (msg: string, type?: 'success
           <Field label="Phone" value={content.footerPhone} onChange={v => update('footerPhone', v)} />
           <Field label="Working Hours" value={content.footerHours} onChange={v => update('footerHours', v)} />
         </div>
-        <div className="grid sm:grid-cols-2 gap-3">
-          <Field label="Creator Name" value={content.footerCreatorName} onChange={v => update('footerCreatorName', v)} />
-          <Field label="Creator URL (Instagram/site)" value={content.footerCreatorUrl} onChange={v => update('footerCreatorUrl', v)} />
-        </div>
       </Section>
 
       {/* Save button at bottom */}
