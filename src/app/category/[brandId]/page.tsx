@@ -240,7 +240,7 @@ function ProductCard({ product, delay, brandColor }: { product: Product; delay: 
             </span>
           </div>
           <a
-            href="tel:+919876543210"
+            href="tel:+918513908681"
             className={`px-4 py-2 rounded-xl text-xs font-bold tracking-widest uppercase transition-all hover:scale-105 ${
               product.inStock
                 ? 'bg-primary hover:bg-primary-dark text-white'

@@ -6,7 +6,7 @@ import { MessageCircle, Navigation, Phone, X, MapPin } from 'lucide-react';
 export default function FloatingButtons() {
   const [open, setOpen] = useState(false);
 
-  const PHONE = '+919876543210';
+  const PHONE = '+918513908681';
   const MAPS_URL = 'https://maps.google.com/?q=Exide+Point+Spare+Parts+West+Bengal';
   const WA_URL = `https://wa.me/${PHONE}?text=Hi%2C%20I%20would%20like%20to%20enquire%20about%20batteries.`;
 

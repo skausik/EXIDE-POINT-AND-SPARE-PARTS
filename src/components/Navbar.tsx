@@ -68,7 +68,7 @@ export default function Navbar() {
           {/* CTA */}
           <div className="hidden md:flex items-center gap-3">
             <a
-              href="tel:+919876543210"
+              href="tel:+918513908681"
               className="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold text-sm tracking-widest uppercase rounded-lg transition-all duration-200 hover:scale-105 glow-red"
             >
               Call Now
@@ -104,7 +104,7 @@ export default function Navbar() {
             </Link>
           ))}
           <a
-            href="tel:+919876543210"
+            href="tel:+918513908681"
             className="px-5 py-2.5 bg-primary text-white font-bold text-sm tracking-widest uppercase rounded-lg text-center mt-2"
           >
             Call Now

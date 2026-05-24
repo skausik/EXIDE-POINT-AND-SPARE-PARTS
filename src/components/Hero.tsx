@@ -123,7 +123,7 @@ export default function Hero() {
                 View Batteries
               </a>
               <a
-                href="tel:+919876543210"
+                href="tel:+918513908681"
                 className="px-8 py-4 border border-white/20 hover:border-primary/60 text-white font-bold text-sm tracking-widest uppercase rounded-lg backdrop-blur-sm hover:bg-primary/10 transition-all"
               >
                 Call Us
