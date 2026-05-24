@@ -458,6 +458,73 @@ function DeleteModal({ name, onConfirm, onClose }: { name: string; onConfirm: ()
 }
 
 // ──────────────────────────────────────────────
+// Site Content Editor — shared sub-components
+// Defined OUTSIDE SiteContentEditor so their identity is stable across
+// re-renders. Defining them inside causes React to unmount/remount on every
+// keystroke (focus loss) or every state change (accordion flicker).
+// ──────────────────────────────────────────────
+
+function ContentSection({
+  id, title, openSection, onToggle, children,
+}: {
+  id: string; title: string; openSection: string | null;
+  onToggle: (id: string) => void; children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-dark-3 border border-white/10 rounded-2xl overflow-hidden">
+      <button
+        type="button"
+        onClick={() => onToggle(id)}
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/5 transition-colors"
+      >
+        <span className="text-white font-bold tracking-wide">{title}</span>
+        {openSection === id
+          ? <ChevronUp className="w-4 h-4 text-gray-400" />
+          : <ChevronDown className="w-4 h-4 text-gray-400" />}
+      </button>
+      {openSection === id && (
+        <div className="px-5 pb-5 border-t border-white/10 space-y-4 pt-4">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ContentField({
+  label, value, onChange, placeholder, multiline = false, hint,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  placeholder?: string; multiline?: boolean; hint?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-1">
+        {label}
+      </label>
+      {hint && <p className="text-gray-600 text-xs mb-1">{hint}</p>}
+      {multiline ? (
+        <textarea
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={3}
+          className="admin-input resize-none text-sm"
+        />
+      ) : (
+        <input
+          type="text"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="admin-input text-sm"
+        />
+      )}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────
 // Site Content Editor
 // ──────────────────────────────────────────────
 function SiteContentEditor({ onToast }: { onToast: (msg: string, type?: 'success' | 'error') => void }) {
@@ -482,6 +549,10 @@ function SiteContentEditor({ onToast }: { onToast: (msg: string, type?: 'success
       arr[index] = { ...arr[index], [field]: value };
       return { ...prev, [key]: arr };
     });
+  }, []);
+
+  const toggleSection = useCallback((id: string) => {
+    setOpenSection(prev => prev === id ? null : id);
   }, []);
 
   const handleSave = () => {
@@ -514,54 +585,6 @@ function SiteContentEditor({ onToast }: { onToast: (msg: string, type?: 'success
     onToast('Brand image removed.', 'success');
   };
 
-  const Section = ({ id, title, children }: { id: string; title: string; children: React.ReactNode }) => (
-    <div className="bg-dark-3 border border-white/10 rounded-2xl overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpenSection(openSection === id ? null : id)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/5 transition-colors"
-      >
-        <span className="text-white font-bold tracking-wide">{title}</span>
-        {openSection === id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-      </button>
-      {openSection === id && (
-        <div className="px-5 pb-5 border-t border-white/10 space-y-4 pt-4">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-
-  const Field = ({
-    label, value, onChange, placeholder, multiline = false, hint,
-  }: {
-    label: string; value: string; onChange: (v: string) => void; placeholder?: string; multiline?: boolean; hint?: string;
-  }) => (
-    <div>
-      <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-1">
-        {label}
-      </label>
-      {hint && <p className="text-gray-600 text-xs mb-1">{hint}</p>}
-      {multiline ? (
-        <textarea
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder={placeholder}
-          rows={3}
-          className="admin-input resize-none text-sm"
-        />
-      ) : (
-        <input
-          type="text"
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="admin-input text-sm"
-        />
-      )}
-    </div>
-  );
-
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -581,7 +604,7 @@ function SiteContentEditor({ onToast }: { onToast: (msg: string, type?: 'success
       </div>
 
       {/* Brand Images */}
-      <Section id="brandimages" title="🔋 Brand Images (Battery Photos)">
+      <ContentSection id="brandimages" title="🔋 Brand Images (Battery Photos)" openSection={openSection} onToggle={toggleSection}>
         <p className="text-gray-500 text-xs mb-3">
           Upload battery/brand images for each brand. These replace the emoji icons in the brand grid and brand pages.
           Recommended: transparent PNG, square, under 2MB.
@@ -649,77 +672,77 @@ function SiteContentEditor({ onToast }: { onToast: (msg: string, type?: 'success
             );
           })}
         </div>
-      </Section>
+      </ContentSection>
 
       {/* General / Navbar */}
-      <Section id="general" title="🔷 Navbar & General">
+      <ContentSection id="general" title="🔷 Navbar & General" openSection={openSection} onToggle={toggleSection}>
         <div className="grid sm:grid-cols-3 gap-4">
-          <Field label="Site Title" value={content.navbarTitle} onChange={v => update('navbarTitle', v)} placeholder="EXIDE POINT" />
-          <Field label="Site Subtitle" value={content.navbarSubtitle} onChange={v => update('navbarSubtitle', v)} placeholder="& Spare Parts" />
-          <Field label="Phone Number" value={content.navPhone} onChange={v => update('navPhone', v)} placeholder="+918513908681" hint="Used in Call Now buttons (no spaces)" />
+          <ContentField label="Site Title" value={content.navbarTitle} onChange={v => update('navbarTitle', v)} placeholder="EXIDE POINT" />
+          <ContentField label="Site Subtitle" value={content.navbarSubtitle} onChange={v => update('navbarSubtitle', v)} placeholder="& Spare Parts" />
+          <ContentField label="Phone Number" value={content.navPhone} onChange={v => update('navPhone', v)} placeholder="+918513908681" hint="Used in Call Now buttons (no spaces)" />
         </div>
-      </Section>
+      </ContentSection>
 
       {/* Hero Slides */}
-      <Section id="hero" title="🎯 Hero Slides">
+      <ContentSection id="hero" title="🎯 Hero Slides" openSection={openSection} onToggle={toggleSection}>
         {content.heroSlides.map((slide, i) => (
           <div key={i} className="border border-white/10 rounded-xl p-4 space-y-3">
             <div className="text-xs font-bold text-primary tracking-widest uppercase mb-2">Slide {i + 1}</div>
             <div className="grid sm:grid-cols-2 gap-3">
-              <Field label="Title" value={slide.title} onChange={v => updateNested('heroSlides', i, 'title', v)} placeholder="POWER YOUR LIFE" />
-              <Field label="Subtitle" value={slide.subtitle} onChange={v => updateNested('heroSlides', i, 'subtitle', v)} placeholder="Premium Battery Solutions" />
+              <ContentField label="Title" value={slide.title} onChange={v => updateNested('heroSlides', i, 'title', v)} placeholder="POWER YOUR LIFE" />
+              <ContentField label="Subtitle" value={slide.subtitle} onChange={v => updateNested('heroSlides', i, 'subtitle', v)} placeholder="Premium Battery Solutions" />
             </div>
-            <Field label="Badge Text" value={slide.badge} onChange={v => updateNested('heroSlides', i, 'badge', v)} placeholder="AUTHORIZED MULTI BRAND RETAILER" />
-            <Field label="Description" value={slide.desc} onChange={v => updateNested('heroSlides', i, 'desc', v)} multiline placeholder="Slide description..." />
-            <Field label="Icon (emoji)" value={slide.icon} onChange={v => updateNested('heroSlides', i, 'icon', v)} placeholder="⚡" hint="Any emoji shown in the rotating circle" />
+            <ContentField label="Badge Text" value={slide.badge} onChange={v => updateNested('heroSlides', i, 'badge', v)} placeholder="Authorized multi brand retailer" />
+            <ContentField label="Description" value={slide.desc} onChange={v => updateNested('heroSlides', i, 'desc', v)} multiline placeholder="Slide description..." />
+            <ContentField label="Icon (emoji)" value={slide.icon} onChange={v => updateNested('heroSlides', i, 'icon', v)} placeholder="⚡" hint="Any emoji shown in the rotating circle" />
           </div>
         ))}
-      </Section>
+      </ContentSection>
 
       {/* Hero Stats */}
-      <Section id="stats" title="📊 Hero Stats Bar">
+      <ContentSection id="stats" title="📊 Hero Stats Bar" openSection={openSection} onToggle={toggleSection}>
         {content.heroStats.map((stat, i) => (
           <div key={i} className="grid sm:grid-cols-2 gap-3">
-            <Field label={`Stat ${i + 1} Label`} value={stat.label} onChange={v => updateNested('heroStats', i, 'label', v)} placeholder="Brands Available" />
-            <Field label={`Stat ${i + 1} Value`} value={stat.value} onChange={v => updateNested('heroStats', i, 'value', v)} placeholder="8+" />
+            <ContentField label={`Stat ${i + 1} Label`} value={stat.label} onChange={v => updateNested('heroStats', i, 'label', v)} placeholder="Brands Available" />
+            <ContentField label={`Stat ${i + 1} Value`} value={stat.value} onChange={v => updateNested('heroStats', i, 'value', v)} placeholder="8+" />
           </div>
         ))}
-      </Section>
+      </ContentSection>
 
       {/* Brands Section */}
-      <Section id="brands" title="🏷️ Brands Section">
-        <Field label="Section Label (small text)" value={content.brandsSectionLabel} onChange={v => update('brandsSectionLabel', v)} placeholder="Our Collection" />
-        <Field label="Section Title (big heading)" value={content.brandsSectionTitle} onChange={v => update('brandsSectionTitle', v)} placeholder="PREMIUM BRANDS" />
-        <Field label="Section Description" value={content.brandsSectionDesc} onChange={v => update('brandsSectionDesc', v)} multiline placeholder="We stock only genuine..." />
-      </Section>
+      <ContentSection id="brands" title="🏷️ Brands Section" openSection={openSection} onToggle={toggleSection}>
+        <ContentField label="Section Label (small text)" value={content.brandsSectionLabel} onChange={v => update('brandsSectionLabel', v)} placeholder="Our Collection" />
+        <ContentField label="Section Title (big heading)" value={content.brandsSectionTitle} onChange={v => update('brandsSectionTitle', v)} placeholder="PREMIUM BRANDS" />
+        <ContentField label="Section Description" value={content.brandsSectionDesc} onChange={v => update('brandsSectionDesc', v)} multiline placeholder="We stock only genuine..." />
+      </ContentSection>
 
       {/* Services Section */}
-      <Section id="services" title="⚙️ Services Section">
+      <ContentSection id="services" title="⚙️ Services Section" openSection={openSection} onToggle={toggleSection}>
         <div className="grid sm:grid-cols-2 gap-3">
-          <Field label="Section Label" value={content.servicesSectionLabel} onChange={v => update('servicesSectionLabel', v)} placeholder="What We Offer" />
-          <Field label="Section Title" value={content.servicesSectionTitle} onChange={v => update('servicesSectionTitle', v)} placeholder="OUR SERVICES" />
+          <ContentField label="Section Label" value={content.servicesSectionLabel} onChange={v => update('servicesSectionLabel', v)} placeholder="What We Offer" />
+          <ContentField label="Section Title" value={content.servicesSectionTitle} onChange={v => update('servicesSectionTitle', v)} placeholder="OUR SERVICES" />
         </div>
         <div className="mt-2 space-y-3">
           {content.services.map((svc, i) => (
             <div key={i} className="border border-white/10 rounded-xl p-3 space-y-2">
               <div className="text-xs font-bold text-gray-500 tracking-widest uppercase">Service {i + 1}</div>
-              <Field label="Title" value={svc.title} onChange={v => updateNested('services', i, 'title', v)} />
-              <Field label="Description" value={svc.desc} onChange={v => updateNested('services', i, 'desc', v)} multiline />
+              <ContentField label="Title" value={svc.title} onChange={v => updateNested('services', i, 'title', v)} />
+              <ContentField label="Description" value={svc.desc} onChange={v => updateNested('services', i, 'desc', v)} multiline />
             </div>
           ))}
         </div>
-      </Section>
+      </ContentSection>
 
       {/* About Section */}
-      <Section id="about" title="ℹ️ About Section">
+      <ContentSection id="about" title="ℹ️ About Section" openSection={openSection} onToggle={toggleSection}>
         <div className="grid sm:grid-cols-2 gap-3">
-          <Field label="Section Label" value={content.aboutLabel} onChange={v => update('aboutLabel', v)} placeholder="About Us" />
-          <Field label="Card Title" value={content.aboutCardTitle} onChange={v => update('aboutCardTitle', v)} placeholder="EXIDE POINT" />
+          <ContentField label="Section Label" value={content.aboutLabel} onChange={v => update('aboutLabel', v)} placeholder="About Us" />
+          <ContentField label="Card Title" value={content.aboutCardTitle} onChange={v => update('aboutCardTitle', v)} placeholder="EXIDE POINT" />
         </div>
-        <Field label="Main Heading" value={content.aboutTitle} onChange={v => update('aboutTitle', v)} placeholder="YOUR TRUSTED BATTERY PARTNER" />
-        <Field label="Card Subtitle" value={content.aboutCardSubtitle} onChange={v => update('aboutCardSubtitle', v)} placeholder="& Spare Parts" />
-        <Field label="Paragraph 1" value={content.aboutPara1} onChange={v => update('aboutPara1', v)} multiline />
-        <Field label="Paragraph 2" value={content.aboutPara2} onChange={v => update('aboutPara2', v)} multiline />
+        <ContentField label="Main Heading" value={content.aboutTitle} onChange={v => update('aboutTitle', v)} placeholder="YOUR TRUSTED BATTERY PARTNER" />
+        <ContentField label="Card Subtitle" value={content.aboutCardSubtitle} onChange={v => update('aboutCardSubtitle', v)} placeholder="& Spare Parts" />
+        <ContentField label="Paragraph 1" value={content.aboutPara1} onChange={v => update('aboutPara1', v)} multiline />
+        <ContentField label="Paragraph 2" value={content.aboutPara2} onChange={v => update('aboutPara2', v)} multiline />
         <div>
           <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-1">Feature Bullets (one per line)</label>
           <textarea
@@ -727,33 +750,34 @@ function SiteContentEditor({ onToast }: { onToast: (msg: string, type?: 'success
             onChange={e => update('aboutFeatures', e.target.value.split('\n').filter(Boolean))}
             rows={6}
             className="admin-input resize-none text-sm"
-            placeholder="Authorized dealer for 8+ battery brands&#10;Free battery testing..."
+            placeholder="Authorized multi brand retailer for 8+ battery brands&#10;Free battery testing..."
           />
         </div>
         <div className="grid sm:grid-cols-3 gap-3">
-          <Field label="Location" value={content.aboutLocation} onChange={v => update('aboutLocation', v)} />
-          <Field label="Phone (display)" value={content.aboutPhone} onChange={v => update('aboutPhone', v)} />
-          <Field label="Hours" value={content.aboutHours} onChange={v => update('aboutHours', v)} />
+          <ContentField label="Location" value={content.aboutLocation} onChange={v => update('aboutLocation', v)} />
+          <ContentField label="Phone (display)" value={content.aboutPhone} onChange={v => update('aboutPhone', v)} />
+          <ContentField label="Hours" value={content.aboutHours} onChange={v => update('aboutHours', v)} />
         </div>
-      </Section>
+      </ContentSection>
 
       {/* Footer */}
-      <Section id="footer" title="🦶 Footer">
-        <Field label="Footer Description" value={content.footerDesc} onChange={v => update('footerDesc', v)} multiline />
+      <ContentSection id="footer" title="🦶 Footer" openSection={openSection} onToggle={toggleSection}>
+        <ContentField label="Footer Description" value={content.footerDesc} onChange={v => update('footerDesc', v)} multiline />
         <div className="grid sm:grid-cols-2 gap-3">
-          <Field label="Facebook URL" value={content.footerFacebookUrl} onChange={v => update('footerFacebookUrl', v)} />
-          <Field label="Email" value={content.footerEmail} onChange={v => update('footerEmail', v)} />
+          <ContentField label="Facebook URL" value={content.footerFacebookUrl} onChange={v => update('footerFacebookUrl', v)} />
+          <ContentField label="Email" value={content.footerEmail} onChange={v => update('footerEmail', v)} />
         </div>
         <div className="grid sm:grid-cols-3 gap-3">
-          <Field label="Address" value={content.footerAddress} onChange={v => update('footerAddress', v)} />
-          <Field label="Phone" value={content.footerPhone} onChange={v => update('footerPhone', v)} />
-          <Field label="Working Hours" value={content.footerHours} onChange={v => update('footerHours', v)} />
+          <ContentField label="Address" value={content.footerAddress} onChange={v => update('footerAddress', v)} />
+          <ContentField label="Phone 1" value={content.footerPhone1} onChange={v => update('footerPhone1', v)} />
+          <ContentField label="Phone 2" value={content.footerPhone2} onChange={v => update('footerPhone2', v)} />
+          <ContentField label="Working Hours" value={content.footerHours} onChange={v => update('footerHours', v)} />
         </div>
         <div className="grid sm:grid-cols-2 gap-3">
-          <Field label="Creator Name" value={content.footerCreatorName} onChange={v => update('footerCreatorName', v)} />
-          <Field label="Creator URL (Instagram/site)" value={content.footerCreatorUrl} onChange={v => update('footerCreatorUrl', v)} />
+          <ContentField label="Creator Name" value={content.footerCreatorName} onChange={v => update('footerCreatorName', v)} />
+          <ContentField label="Creator URL (Instagram/site)" value={content.footerCreatorUrl} onChange={v => update('footerCreatorUrl', v)} />
         </div>
-      </Section>
+      </ContentSection>
 
       {/* Save button at bottom */}
       <div className="flex justify-end pt-2">

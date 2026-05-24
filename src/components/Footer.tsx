@@ -105,7 +105,7 @@ export default function Footer() {
                 <div>
                   <div className="text-white text-sm font-semibold">Phone</div>
                   <a href={`tel:${content.navPhone}`} className="text-gray-500 text-xs hover:text-primary transition-colors">
-                    {content.footerPhone}
+                    {content. footerPhone1} / {content.footerPhone2}
                   </a>
                 </div>
               </div>

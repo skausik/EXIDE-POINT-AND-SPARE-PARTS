@@ -64,7 +64,8 @@ export interface SiteContent {
   footerDesc: string;
   footerFacebookUrl: string;
   footerAddress: string;
-  footerPhone: string;
+  footerPhone1: string;
+  footerPhone2: string;
   footerHours: string;
   footerEmail: string;
   footerCreatorName: string;
@@ -209,7 +210,7 @@ const DEFAULT_SITE_CONTENT: SiteContent = {
       title: 'POWER YOUR LIFE',
       subtitle: 'Premium Battery Solutions',
       desc: 'Genuine batteries for cars, bikes, inverters & solar. Best prices, expert advice.',
-      badge: 'AUTHORIZED MULTI BRAND RETAILER',
+      badge: 'Authorized multi brand retailer',
       icon: '⚡',
     },
     {
@@ -251,10 +252,10 @@ const DEFAULT_SITE_CONTENT: SiteContent = {
 
   aboutLabel: 'About Us',
   aboutTitle: 'YOUR TRUSTED BATTERY PARTNER',
-  aboutPara1: 'Exide Point & Spare Parts has been serving the community for over a decade, providing top-quality batteries for every need — from two-wheelers to industrial inverters.',
+  aboutPara1: 'Exide Point & Spare Parts has been serving the community for over a 6+ years, providing top-quality batteries for every need — from two-wheelers to industrial inverters.',
   aboutPara2: 'We believe in honest service, genuine products, and building long-term relationships with our customers. Every battery we sell comes with complete manufacturer warranty and our personal service guarantee.',
   aboutFeatures: [
-    'Authorized dealer for 8+ battery brands',
+    'Authorized multi brand retailer for 8+ battery brands',
     'Free battery testing & health checkup',
     'Genuine products with valid warranty cards',
     'Expert installation & old battery exchange',
@@ -270,7 +271,8 @@ const DEFAULT_SITE_CONTENT: SiteContent = {
   footerDesc: 'Your trusted destination for genuine batteries — cars, bikes, inverters & solar. Quality products, expert advice.',
   footerFacebookUrl: 'https://www.facebook.com/people/EXIDE-point-and-spare-parts/100069745907389/',
   footerAddress: 'Your City, West Bengal, India',
-  footerPhone: '+91 8513908681',
+  footerPhone1: '+91 8513908681',
+  footerPhone2: '+91 7908278851',
   footerHours: 'Mon–Sat: 9 AM – 8 PM',
   footerEmail: 'exidepoint@gmail.com',
   footerCreatorName: 'KAUSIK SANTRA',
