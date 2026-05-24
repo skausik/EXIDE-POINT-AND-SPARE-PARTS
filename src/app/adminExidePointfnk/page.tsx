@@ -1,0 +1,724 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import {
+  Plus, Edit2, Trash2, Save, X, Upload, Eye, EyeOff,
+  LayoutDashboard, Package, LogOut, Search, CheckCircle2,
+  AlertCircle, Zap, Image as ImageIcon, ToggleLeft, ToggleRight
+} from 'lucide-react';
+import { BRANDS, getProducts, addProduct, updateProduct, deleteProduct, Product } from '@/lib/data';
+
+// ──────────────────────────────────────────────
+// Auth
+// ──────────────────────────────────────────────
+const ADMIN_PASSWORD = 'ExideAdmin@2024';
+
+// ──────────────────────────────────────────────
+// Validation helpers
+// ──────────────────────────────────────────────
+interface FormErrors {
+  name?: string;
+  brand?: string;
+  category?: string;
+  price?: string;
+  warranty?: string;
+  description?: string;
+  image?: string;
+}
+
+function validateForm(data: Partial<Product>): FormErrors {
+  const errors: FormErrors = {};
+  if (!data.name?.trim()) errors.name = 'Product name is required.';
+  else if (data.name.trim().length < 3) errors.name = 'Name must be at least 3 characters.';
+  if (!data.brand) errors.brand = 'Please select a brand.';
+  if (!data.category?.trim()) errors.category = 'Category is required.';
+  if (!data.price || isNaN(Number(data.price))) errors.price = 'Enter a valid price.';
+  else if (Number(data.price) <= 0) errors.price = 'Price must be greater than 0.';
+  else if (Number(data.price) > 1000000) errors.price = 'Price seems too high.';
+  if (!data.warranty?.trim()) errors.warranty = 'Warranty info is required.';
+  if (!data.description?.trim()) errors.description = 'Description is required.';
+  else if (data.description.trim().length < 10) errors.description = 'Description must be at least 10 characters.';
+  return errors;
+}
+
+const MAX_IMAGE_SIZE_MB = 2;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+// ──────────────────────────────────────────────
+// Toast
+// ──────────────────────────────────────────────
+function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error'; onClose: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 3500);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  return (
+    <div
+      className={`fixed top-6 right-6 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl text-white font-semibold text-sm transition-all duration-300 ${
+        type === 'success' ? 'bg-green-700 border border-green-500/40' : 'bg-red-800 border border-red-500/40'
+      }`}
+    >
+      {type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+      {msg}
+      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><X className="w-4 h-4" /></button>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Login screen
+// ──────────────────────────────────────────────
+function LoginScreen({ onLogin }: { onLogin: () => void }) {
+  const [pw, setPw] = useState('');
+  const [show, setShow] = useState(false);
+  const [error, setError] = useState('');
+  const [shake, setShake] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pw.trim()) { setError('Password is required.'); return; }
+    if (pw === ADMIN_PASSWORD) {
+      sessionStorage.setItem('admin_auth', '1');
+      onLogin();
+    } else {
+      setError('Incorrect password. Please try again.');
+      setShake(true);
+      setTimeout(() => setShake(false), 600);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-dark flex items-center justify-center px-4">
+      {/* BG grid */}
+      <div
+        className="absolute inset-0 opacity-5"
+        style={{
+          backgroundImage: `linear-gradient(rgba(204,0,0,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(204,0,0,0.5) 1px, transparent 1px)`,
+          backgroundSize: '50px 50px',
+        }}
+      />
+      <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
+
+      <form
+        onSubmit={handleSubmit}
+        className={`relative z-10 w-full max-w-sm bg-dark-2 border border-white/10 rounded-2xl p-8 shadow-2xl ${shake ? 'animate-[shake_0.5s_ease]' : ''}`}
+      >
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center glow-red">
+            <Zap className="w-9 h-9 text-white fill-white" />
+          </div>
+        </div>
+
+        <h1
+          className="text-3xl text-white text-center mb-1"
+          style={{ fontFamily: 'Bebas Neue, serif', letterSpacing: '0.05em' }}
+        >
+          ADMIN LOGIN
+        </h1>
+        <p className="text-gray-500 text-sm text-center mb-8">Exide Point Admin Panel</p>
+
+        <div className="mb-4">
+          <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-1.5">
+            Admin Password
+          </label>
+          <div className="relative">
+            <input
+              type={show ? 'text' : 'password'}
+              value={pw}
+              onChange={e => { setPw(e.target.value); setError(''); }}
+              placeholder="Enter password"
+              className={`admin-input pr-10 ${error ? 'error' : ''}`}
+            />
+            <button
+              type="button"
+              onClick={() => setShow(!show)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+            >
+              {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {error && <p className="error-msg mt-1">{error}</p>}
+        </div>
+
+        <button
+          type="submit"
+          className="w-full py-3 bg-primary hover:bg-primary-dark text-white font-bold tracking-widest uppercase rounded-xl glow-red transition-all hover:scale-105 mt-2"
+        >
+          Login
+        </button>
+
+        <p className="text-center text-gray-600 text-xs mt-6">
+          Default password: <span className="text-gray-400 font-mono">ExideAdmin@2024</span>
+        </p>
+      </form>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Product Form Modal
+// ──────────────────────────────────────────────
+interface ProductFormProps {
+  initial?: Product | null;
+  onSave: (data: Omit<Product, 'id' | 'createdAt'>) => void;
+  onClose: () => void;
+}
+
+function ProductForm({ initial, onSave, onClose }: ProductFormProps) {
+  const [form, setForm] = useState({
+    name: initial?.name || '',
+    brand: initial?.brand || '',
+    category: initial?.category || '',
+    price: initial?.price?.toString() || '',
+    warranty: initial?.warranty || '',
+    description: initial?.description || '',
+    image: initial?.image || '',
+    inStock: initial?.inStock ?? true,
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [imgPreview, setImgPreview] = useState(initial?.image || '');
+  const [imgErr, setImgErr] = useState('');
+  const [dragging, setDragging] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const set = (key: string, value: string | boolean) =>
+    setForm(f => ({ ...f, [key]: value }));
+
+  const handleImageFile = (file: File) => {
+    setImgErr('');
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setImgErr('Only JPG, PNG, and WebP images are allowed.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+      setImgErr(`Image must be under ${MAX_IMAGE_SIZE_MB}MB. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const base64 = e.target?.result as string;
+      set('image', base64);
+      setImgPreview(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleImageFile(file);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const errs = validateForm({ ...form, price: Number(form.price) });
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    onSave({
+      name: form.name.trim(),
+      brand: form.brand,
+      category: form.category.trim(),
+      price: Number(form.price),
+      warranty: form.warranty.trim(),
+      description: form.description.trim(),
+      image: form.image,
+      inStock: form.inStock,
+    });
+  };
+
+  const Field = ({
+    label, name, type = 'text', placeholder, as,
+  }: {
+    label: string; name: keyof typeof form; type?: string; placeholder?: string; as?: 'textarea' | 'select';
+  }) => (
+    <div>
+      <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-1.5">
+        {label} <span className="text-primary">*</span>
+      </label>
+      {as === 'textarea' ? (
+        <textarea
+          value={form[name] as string}
+          onChange={e => { set(name, e.target.value); setErrors(prev => ({ ...prev, [name]: '' })); }}
+          placeholder={placeholder}
+          rows={3}
+          className={`admin-input resize-none ${errors[name as keyof FormErrors] ? 'error' : ''}`}
+        />
+      ) : as === 'select' ? (
+        <select
+          value={form[name] as string}
+          onChange={e => { set(name, e.target.value); setErrors(prev => ({ ...prev, [name]: '' })); }}
+          className={`admin-input ${errors[name as keyof FormErrors] ? 'error' : ''}`}
+        >
+          <option value="">Select Brand</option>
+          {BRANDS.map(b => <option key={b.id} value={b.name}>{b.logo} {b.name}</option>)}
+        </select>
+      ) : (
+        <input
+          type={type}
+          value={form[name] as string}
+          onChange={e => { set(name, e.target.value); setErrors(prev => ({ ...prev, [name]: '' })); }}
+          placeholder={placeholder}
+          className={`admin-input ${errors[name as keyof FormErrors] ? 'error' : ''}`}
+        />
+      )}
+      {errors[name as keyof FormErrors] && (
+        <p className="error-msg flex items-center gap-1 mt-1">
+          <AlertCircle className="w-3 h-3" />
+          {errors[name as keyof FormErrors]}
+        </p>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <form
+        onSubmit={handleSubmit}
+        className="relative z-10 w-full max-w-2xl bg-dark-2 border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <h2 className="text-xl font-bold text-white tracking-wide">
+            {initial ? 'Edit Product' : 'Add New Product'}
+          </h2>
+          <button type="button" onClick={onClose} className="text-gray-500 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+          {/* Image Upload */}
+          <div>
+            <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-1.5">
+              Product Image <span className="text-gray-600 normal-case font-normal">(Max 2MB · JPG/PNG/WebP)</span>
+            </label>
+            <div
+              onClick={() => fileRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-xl cursor-pointer transition-all h-40 flex flex-col items-center justify-center gap-2 ${
+                dragging
+                  ? 'border-primary bg-primary/10'
+                  : 'border-white/20 hover:border-primary/50 hover:bg-white/5'
+              }`}
+            >
+              {imgPreview ? (
+                <img src={imgPreview} alt="Preview" className="h-full w-full object-contain rounded-xl p-2" />
+              ) : (
+                <>
+                  <Upload className="w-8 h-8 text-gray-500" />
+                  <span className="text-gray-500 text-sm">Click or drag & drop image</span>
+                  <span className="text-gray-600 text-xs">Max size: 2MB</span>
+                </>
+              )}
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (file) handleImageFile(file);
+              }}
+            />
+            {imgErr && (
+              <p className="error-msg flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3" />
+                {imgErr}
+              </p>
+            )}
+            {imgPreview && (
+              <button
+                type="button"
+                onClick={() => { setImgPreview(''); set('image', ''); }}
+                className="text-xs text-red-400 hover:text-red-300 mt-1 flex items-center gap-1"
+              >
+                <X className="w-3 h-3" /> Remove image
+              </button>
+            )}
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-5">
+            <Field label="Product Name" name="name" placeholder="e.g. Exide Matrix 35Ah" />
+            <Field label="Brand" name="brand" as="select" />
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-5">
+            <Field label="Category" name="category" placeholder="e.g. Car Battery, Inverter Battery" />
+            <Field label="Price (₹)" name="price" type="number" placeholder="e.g. 3499" />
+          </div>
+
+          <Field label="Warranty Period" name="warranty" placeholder="e.g. 36 Months, 48 Months" />
+          <Field label="Description" name="description" as="textarea" placeholder="Brief product description..." />
+
+          {/* In Stock toggle */}
+          <div className="flex items-center justify-between p-4 rounded-xl bg-dark-3 border border-white/10">
+            <div>
+              <div className="text-white font-semibold">In Stock</div>
+              <div className="text-gray-500 text-xs mt-0.5">Toggle product availability</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => set('inStock', !form.inStock)}
+              className={`transition-colors ${form.inStock ? 'text-green-400' : 'text-gray-600'}`}
+            >
+              {form.inStock
+                ? <ToggleRight className="w-10 h-10" />
+                : <ToggleLeft className="w-10 h-10" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-3 px-6 py-4 border-t border-white/10 bg-dark-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 py-2.5 border border-white/20 text-gray-400 hover:text-white rounded-xl font-bold text-sm tracking-widest uppercase transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="flex-1 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold text-sm tracking-widest uppercase glow-red transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
+          >
+            <Save className="w-4 h-4" />
+            {initial ? 'Update' : 'Add Product'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Delete Confirm Modal
+// ──────────────────────────────────────────────
+function DeleteModal({ name, onConfirm, onClose }: { name: string; onConfirm: () => void; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-sm bg-dark-2 border border-red-900/40 rounded-2xl p-6 shadow-2xl">
+        <div className="w-12 h-12 bg-red-900/30 rounded-xl flex items-center justify-center mb-4">
+          <Trash2 className="w-6 h-6 text-red-400" />
+        </div>
+        <h3 className="text-xl font-bold text-white mb-2">Delete Product?</h3>
+        <p className="text-gray-400 text-sm mb-6">
+          Are you sure you want to delete <strong className="text-white">{name}</strong>? This action cannot be undone.
+        </p>
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 border border-white/20 text-gray-400 hover:text-white rounded-xl font-bold text-sm uppercase tracking-widest transition-colors">
+            Cancel
+          </button>
+          <button onClick={onConfirm} className="flex-1 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-xl font-bold text-sm uppercase tracking-widest transition-colors">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Main Admin Panel
+// ──────────────────────────────────────────────
+export default function AdminPanel() {
+  const [authed, setAuthed] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [search, setSearch] = useState('');
+  const [brandFilter, setBrandFilter] = useState('All');
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    if (sessionStorage.getItem('admin_auth') === '1') setAuthed(true);
+  }, []);
+
+  useEffect(() => {
+    if (authed) setProducts(getProducts());
+  }, [authed]);
+
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+    setToast({ msg, type });
+  };
+
+  const handleSave = (data: Omit<Product, 'id' | 'createdAt'>) => {
+    if (editing) {
+      updateProduct(editing.id, data);
+      showToast('Product updated successfully!');
+    } else {
+      addProduct(data);
+      showToast('Product added successfully!');
+    }
+    setProducts(getProducts());
+    setShowForm(false);
+    setEditing(null);
+  };
+
+  const handleDelete = (product: Product) => setDeleteTarget(product);
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteProduct(deleteTarget.id);
+    setProducts(getProducts());
+    showToast('Product deleted.', 'error');
+    setDeleteTarget(null);
+  };
+
+  const handleEdit = (product: Product) => {
+    setEditing(product);
+    setShowForm(true);
+  };
+
+  const filtered = products.filter(p => {
+    const matchSearch =
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.brand.toLowerCase().includes(search.toLowerCase());
+    const matchBrand = brandFilter === 'All' || p.brand === brandFilter;
+    return matchSearch && matchBrand;
+  });
+
+  const stats = {
+    total: products.length,
+    inStock: products.filter(p => p.inStock).length,
+    brands: new Set(products.map(p => p.brand)).size,
+  };
+
+  if (!authed) {
+    return <LoginScreen onLogin={() => setAuthed(true)} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-dark flex">
+      {toast && (
+        <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />
+      )}
+      {showForm && (
+        <ProductForm
+          initial={editing}
+          onSave={handleSave}
+          onClose={() => { setShowForm(false); setEditing(null); }}
+        />
+      )}
+      {deleteTarget && (
+        <DeleteModal
+          name={deleteTarget.name}
+          onConfirm={confirmDelete}
+          onClose={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className="admin-sidebar w-64 shrink-0 hidden md:flex flex-col">
+        {/* Logo */}
+        <div className="p-6 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center glow-red">
+              <Zap className="w-5 h-5 text-white fill-white" />
+            </div>
+            <div className="leading-none">
+              <div className="text-white font-bold tracking-widest text-sm" style={{ fontFamily: 'Bebas Neue, serif' }}>
+                EXIDE POINT
+              </div>
+              <div className="text-primary text-[9px] tracking-widest uppercase">Admin Panel</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 p-4 space-y-2">
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/10 border border-primary/30 text-primary font-bold text-sm tracking-wide">
+            <Package className="w-4 h-4" />
+            Products
+          </div>
+        </nav>
+
+        {/* Stats */}
+        <div className="p-4 border-t border-white/10 space-y-3">
+          {[
+            { label: 'Total Products', value: stats.total },
+            { label: 'In Stock', value: stats.inStock, color: 'text-green-400' },
+            { label: 'Brands', value: stats.brands, color: 'text-accent' },
+          ].map(s => (
+            <div key={s.label} className="flex justify-between items-center text-sm">
+              <span className="text-gray-500">{s.label}</span>
+              <span className={`font-bold ${s.color || 'text-white'}`}>{s.value}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Logout */}
+        <div className="p-4 border-t border-white/10">
+          <button
+            onClick={() => { sessionStorage.removeItem('admin_auth'); setAuthed(false); }}
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition-colors text-sm font-semibold"
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Topbar */}
+        <header className="bg-dark-2 border-b border-white/10 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-white tracking-wide">Product Management</h1>
+            <p className="text-gray-500 text-xs mt-0.5">{filtered.length} of {products.length} products</p>
+          </div>
+          <button
+            onClick={() => { setEditing(null); setShowForm(true); }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold text-sm tracking-widest uppercase rounded-xl glow-red transition-all hover:scale-105"
+          >
+            <Plus className="w-4 h-4" />
+            Add Product
+          </button>
+        </header>
+
+        {/* Filters */}
+        <div className="bg-dark-2 border-b border-white/10 px-6 py-3 flex flex-col sm:flex-row gap-3">
+          {/* Search */}
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-dark-3 border border-white/10 focus:border-primary/50 text-white rounded-xl text-sm outline-none transition-colors"
+              style={{ fontFamily: 'Rajdhani, sans-serif' }}
+            />
+          </div>
+
+          {/* Brand filter */}
+          <select
+            value={brandFilter}
+            onChange={e => setBrandFilter(e.target.value)}
+            className="px-4 py-2 bg-dark-3 border border-white/10 focus:border-primary/50 text-white rounded-xl text-sm outline-none transition-colors"
+            style={{ fontFamily: 'Rajdhani, sans-serif' }}
+          >
+            <option value="All">All Brands</option>
+            {BRANDS.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+          </select>
+        </div>
+
+        {/* Table */}
+        <div className="flex-1 overflow-auto p-6">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64">
+              <Package className="w-12 h-12 text-gray-700 mb-3" />
+              <p className="text-gray-500 font-semibold">No products found</p>
+              <p className="text-gray-700 text-sm mt-1">Add a product to get started.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {filtered.map(product => (
+                <ProductRow
+                  key={product.id}
+                  product={product}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onToggleStock={() => {
+                    updateProduct(product.id, { inStock: !product.inStock });
+                    setProducts(getProducts());
+                    showToast(`Stock status updated.`);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductRow({
+  product, onEdit, onDelete, onToggleStock,
+}: {
+  product: Product;
+  onEdit: (p: Product) => void;
+  onDelete: (p: Product) => void;
+  onToggleStock: () => void;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const brand = BRANDS.find(b => b.name === product.brand);
+
+  return (
+    <div className="bg-dark-3 border border-white/5 hover:border-primary/20 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 transition-all">
+      {/* Image */}
+      <div className="w-20 h-20 rounded-xl overflow-hidden bg-dark-4 shrink-0">
+        {product.image && !imgError ? (
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full h-full object-contain p-1"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="w-full h-full img-placeholder rounded-xl text-2xl">
+            {brand?.logo || <ImageIcon className="w-8 h-8" />}
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-2 mb-1">
+          <h3 className="text-white font-bold text-base truncate">{product.name}</h3>
+          <span
+            className="text-xs px-2 py-0.5 rounded-full font-bold"
+            style={{ background: `${brand?.color || '#CC0000'}22`, color: brand?.color || '#CC0000', border: `1px solid ${brand?.color || '#CC0000'}44` }}
+          >
+            {product.brand}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+          <span>📦 {product.category}</span>
+          <span>🛡️ {product.warranty}</span>
+          <span className="text-accent font-bold text-sm">₹{product.price.toLocaleString('en-IN')}</span>
+        </div>
+        <p className="text-gray-600 text-xs mt-1 truncate">{product.description}</p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 shrink-0">
+        {/* Stock toggle */}
+        <button
+          onClick={onToggleStock}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            product.inStock
+              ? 'bg-green-900/30 text-green-400 border border-green-800/50 hover:bg-green-900/50'
+              : 'bg-red-900/30 text-red-400 border border-red-800/50 hover:bg-red-900/50'
+          }`}
+        >
+          {product.inStock ? '● In Stock' : '● Out'}
+        </button>
+
+        <button
+          onClick={() => onEdit(product)}
+          className="p-2 rounded-lg bg-dark-4 border border-white/10 text-gray-400 hover:text-white hover:border-primary/40 transition-all"
+          title="Edit"
+        >
+          <Edit2 className="w-4 h-4" />
+        </button>
+
+        <button
+          onClick={() => onDelete(product)}
+          className="p-2 rounded-lg bg-dark-4 border border-white/10 text-gray-400 hover:text-red-400 hover:border-red-900/50 transition-all"
+          title="Delete"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
