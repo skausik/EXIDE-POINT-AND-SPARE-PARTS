@@ -918,7 +918,7 @@ export default function AdminPanel() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — desktop only */}
       <aside className="admin-sidebar w-64 shrink-0 hidden md:flex flex-col">
         {/* Logo */}
         <div className="p-6 border-b border-white/10">
@@ -989,6 +989,48 @@ export default function AdminPanel() {
 
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Mobile top bar — visible only on small screens */}
+        <div className="md:hidden bg-dark-2 border-b border-white/10 px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center glow-red">
+              <Zap className="w-4 h-4 text-white fill-white" />
+            </div>
+            <span className="text-white font-bold tracking-widest text-sm" style={{ fontFamily: 'Bebas Neue, serif' }}>
+              EXIDE POINT
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setActiveTab('products')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs tracking-wide transition-all ${
+                activeTab === 'products'
+                  ? 'bg-primary/20 border border-primary/40 text-primary'
+                  : 'text-gray-500 hover:text-white border border-transparent'
+              }`}
+            >
+              <Package className="w-3.5 h-3.5" />
+              Products
+            </button>
+            <button
+              onClick={() => setActiveTab('content')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs tracking-wide transition-all ${
+                activeTab === 'content'
+                  ? 'bg-primary/20 border border-primary/40 text-primary'
+                  : 'text-gray-500 hover:text-white border border-transparent'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Site Content
+            </button>
+            <button
+              onClick={() => { sessionStorage.removeItem('admin_auth'); setAuthed(false); }}
+              className="p-1.5 rounded-lg text-gray-500 hover:text-white border border-transparent hover:border-white/10 transition-all"
+              title="Logout"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
         {activeTab === 'products' ? (
           <>
             {/* Topbar */}
