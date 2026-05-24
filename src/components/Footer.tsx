@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { Zap, Phone, MapPin, Clock, Facebook, Mail } from 'lucide-react';
-import { BRANDS, getSiteContent } from '@/lib/data';
-import { useEffect, useState } from 'react';
-import type { SiteContent } from '@/lib/data';
+import Link from "next/link";
+import { Zap, Phone, MapPin, Clock, Facebook, Mail } from "lucide-react";
+import { BRANDS, getSiteContent } from "@/lib/data";
+import { useEffect, useState } from "react";
+import type { SiteContent } from "@/lib/data";
 
 export default function Footer() {
   const [content, setContent] = useState<SiteContent | null>(null);
@@ -12,8 +12,8 @@ export default function Footer() {
   useEffect(() => {
     setContent(getSiteContent());
     const onStorage = () => setContent(getSiteContent());
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   if (!content) return null;
@@ -29,10 +29,18 @@ export default function Footer() {
                 <Zap className="w-6 h-6 text-white fill-white" />
               </div>
               <div>
-                <div className="text-xl text-white font-bold" style={{ fontFamily: 'Bebas Neue, serif', letterSpacing: '0.05em' }}>
+                <div
+                  className="text-xl text-white font-bold"
+                  style={{
+                    fontFamily: "Bebas Neue, serif",
+                    letterSpacing: "0.05em",
+                  }}
+                >
                   {content.navbarTitle}
                 </div>
-                <div className="text-[10px] text-primary tracking-widest uppercase">{content.navbarSubtitle}</div>
+                <div className="text-[10px] text-primary tracking-widest uppercase">
+                  {content.navbarSubtitle}
+                </div>
               </div>
             </div>
             <p className="text-gray-500 text-sm leading-relaxed mb-4">
@@ -55,10 +63,10 @@ export default function Footer() {
               Quick Links
             </h4>
             <ul className="space-y-2">
-              {['Home', 'Brands', 'Services', 'About', 'Contact'].map(l => (
+              {["Home", "Brands", "Services", "About", "Contact"].map((l) => (
                 <li key={l}>
                   <a
-                    href={l === 'Home' ? '/' : `#${l.toLowerCase()}`}
+                    href={l === "Home" ? "/" : `#${l.toLowerCase()}`}
                     className="text-gray-500 hover:text-primary text-sm transition-colors font-medium"
                   >
                     → {l}
@@ -74,7 +82,7 @@ export default function Footer() {
               Brands We Carry
             </h4>
             <ul className="space-y-2">
-              {BRANDS.map(b => (
+              {BRANDS.map((b) => (
                 <li key={b.id}>
                   <Link
                     href={`/category/${b.id}`}
@@ -96,31 +104,56 @@ export default function Footer() {
               <div className="flex gap-3">
                 <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-white text-sm font-semibold">Address</div>
-                  <div className="text-gray-500 text-xs mt-0.5">{content.footerAddress}</div>
+                  <div className="text-white text-sm font-semibold">
+                    Address
+                  </div>
+                  <div className="text-gray-500 text-xs mt-0.5">
+                    {content.footerAddress}
+                  </div>
                 </div>
               </div>
               <div className="flex gap-3">
                 <Phone className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div>
                   <div className="text-white text-sm font-semibold">Phone</div>
-                  <a href={`tel:${content.navPhone}`} className="text-gray-500 text-xs hover:text-primary transition-colors">
-                    {content. footerPhone1} / {content.footerPhone2}
+                  <a
+                    href={`tel:${content.footerPhone1}`}
+                    className="text-gray-500 hover:text-primary transition-colors text-xs"
+                  >
+                    {content.footerPhone1}
+                  </a>
+                  {" / "}
+                  <a
+                    href={`tel:${content.footerPhone2}`}
+                    className="text-gray-500 hover:text-primary transition-colors text-xs"
+                  >
+                    {content.footerPhone2}
                   </a>
                 </div>
               </div>
               <div className="flex gap-3">
                 <Clock className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-white text-sm font-semibold">Working Hours</div>
-                  <div className="text-gray-500 text-xs mt-0.5">{content.footerHours}</div>
+                  <div className="text-white text-sm font-semibold">
+                    Working Hours
+                  </div>
+                  <div className="text-gray-500 text-xs mt-0.5">
+                    {content.footerHours}
+                  </div>
                 </div>
               </div>
               <div className="flex gap-3">
                 <Mail className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div>
                   <div className="text-white text-sm font-semibold">Email</div>
-                  <div className="text-gray-500 text-xs">{content.footerEmail}</div>
+                  <div className="text-gray-500 text-xs">
+                    <a
+                      href={`mailto:${content.footerEmail}`}
+                      className="text-gray-500 hover:text-primary transition-colors text-xs"
+                    >
+                      {content.footerEmail}
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -133,11 +166,14 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-600">
           <div>
-            © {new Date().getFullYear()} {content.navbarTitle} {content.navbarSubtitle}. All rights reserved.
+            © {new Date().getFullYear()} {content.navbarTitle}{" "}
+            {content.navbarSubtitle}. All rights reserved.
           </div>
 
           <div className="footer-social flex items-center gap-2">
-            <span className="footer-copy text-gray-600">Website created by</span>
+            <span className="footer-copy text-gray-600">
+              Website created by
+            </span>
             <a
               href={content.footerCreatorUrl}
               target="_blank"
