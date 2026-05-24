@@ -186,8 +186,73 @@ interface ProductFormProps {
   onClose: () => void;
 }
 
+// ── Field must be defined OUTSIDE ProductForm so its identity is stable
+// across re-renders. Defining it inside causes React to treat it as a new
+// component on every keystroke, unmounting the input and losing focus.
+type FieldForm = {
+  name: string; brand: string; category: string;
+  price: string; warranty: string; description: string;
+  image: string; inStock: boolean;
+};
+
+function Field({
+  label, name, type = 'text', placeholder, as,
+  form, errors, onSet, onClearError,
+}: {
+  label: string;
+  name: keyof FieldForm;
+  type?: string;
+  placeholder?: string;
+  as?: 'textarea' | 'select';
+  form: FieldForm;
+  errors: FormErrors;
+  onSet: (key: string, value: string | boolean) => void;
+  onClearError: (key: string) => void;
+}) {
+  const hasError = !!errors[name as keyof FormErrors];
+  return (
+    <div>
+      <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-1.5">
+        {label} <span className="text-primary">*</span>
+      </label>
+      {as === 'textarea' ? (
+        <textarea
+          value={form[name] as string}
+          onChange={e => { onSet(name, e.target.value); onClearError(name); }}
+          placeholder={placeholder}
+          rows={3}
+          className={`admin-input resize-none ${hasError ? 'error' : ''}`}
+        />
+      ) : as === 'select' ? (
+        <select
+          value={form[name] as string}
+          onChange={e => { onSet(name, e.target.value); onClearError(name); }}
+          className={`admin-input ${hasError ? 'error' : ''}`}
+        >
+          <option value="">Select Brand</option>
+          {BRANDS.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+        </select>
+      ) : (
+        <input
+          type={type}
+          value={form[name] as string}
+          onChange={e => { onSet(name, e.target.value); onClearError(name); }}
+          placeholder={placeholder}
+          className={`admin-input ${hasError ? 'error' : ''}`}
+        />
+      )}
+      {hasError && (
+        <p className="error-msg flex items-center gap-1 mt-1">
+          <AlertCircle className="w-3 h-3" />
+          {errors[name as keyof FormErrors]}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function ProductForm({ initial, onSave, onClose }: ProductFormProps) {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FieldForm>({
     name: initial?.name || '',
     brand: initial?.brand || '',
     category: initial?.category || '',
@@ -203,8 +268,11 @@ function ProductForm({ initial, onSave, onClose }: ProductFormProps) {
   const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const set = (key: string, value: string | boolean) =>
-    setForm(f => ({ ...f, [key]: value }));
+  const set = useCallback((key: string, value: string | boolean) =>
+    setForm(f => ({ ...f, [key]: value })), []);
+
+  const clearError = useCallback((key: string) =>
+    setErrors(prev => ({ ...prev, [key]: '' })), []);
 
   const handleImageFile = async (file: File) => {
     setImgErr('');
@@ -239,50 +307,6 @@ function ProductForm({ initial, onSave, onClose }: ProductFormProps) {
       inStock: form.inStock,
     });
   };
-
-  const Field = ({
-    label, name, type = 'text', placeholder, as,
-  }: {
-    label: string; name: keyof typeof form; type?: string; placeholder?: string; as?: 'textarea' | 'select';
-  }) => (
-    <div>
-      <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-1.5">
-        {label} <span className="text-primary">*</span>
-      </label>
-      {as === 'textarea' ? (
-        <textarea
-          value={form[name] as string}
-          onChange={e => { set(name, e.target.value); setErrors(prev => ({ ...prev, [name]: '' })); }}
-          placeholder={placeholder}
-          rows={3}
-          className={`admin-input resize-none ${errors[name as keyof FormErrors] ? 'error' : ''}`}
-        />
-      ) : as === 'select' ? (
-        <select
-          value={form[name] as string}
-          onChange={e => { set(name, e.target.value); setErrors(prev => ({ ...prev, [name]: '' })); }}
-          className={`admin-input ${errors[name as keyof FormErrors] ? 'error' : ''}`}
-        >
-          <option value="">Select Brand</option>
-          {BRANDS.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
-        </select>
-      ) : (
-        <input
-          type={type}
-          value={form[name] as string}
-          onChange={e => { set(name, e.target.value); setErrors(prev => ({ ...prev, [name]: '' })); }}
-          placeholder={placeholder}
-          className={`admin-input ${errors[name as keyof FormErrors] ? 'error' : ''}`}
-        />
-      )}
-      {errors[name as keyof FormErrors] && (
-        <p className="error-msg flex items-center gap-1 mt-1">
-          <AlertCircle className="w-3 h-3" />
-          {errors[name as keyof FormErrors]}
-        </p>
-      )}
-    </div>
-  );
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
@@ -355,17 +379,17 @@ function ProductForm({ initial, onSave, onClose }: ProductFormProps) {
           </div>
 
           <div className="grid sm:grid-cols-2 gap-5">
-            <Field label="Product Name" name="name" placeholder="e.g. Exide Matrix 35Ah" />
-            <Field label="Brand" name="brand" as="select" />
+            <Field label="Product Name" name="name" placeholder="e.g. Exide Matrix 35Ah" form={form} errors={errors} onSet={set} onClearError={clearError} />
+            <Field label="Brand" name="brand" as="select" form={form} errors={errors} onSet={set} onClearError={clearError} />
           </div>
 
           <div className="grid sm:grid-cols-2 gap-5">
-            <Field label="Category" name="category" placeholder="e.g. Car Battery, Inverter Battery" />
-            <Field label="Price (₹)" name="price" type="number" placeholder="e.g. 3499" />
+            <Field label="Category" name="category" placeholder="e.g. Car Battery, Inverter Battery" form={form} errors={errors} onSet={set} onClearError={clearError} />
+            <Field label="Price (₹)" name="price" type="number" placeholder="e.g. 3499" form={form} errors={errors} onSet={set} onClearError={clearError} />
           </div>
 
-          <Field label="Warranty Period" name="warranty" placeholder="e.g. 36 Months, 48 Months" />
-          <Field label="Description" name="description" as="textarea" placeholder="Brief product description..." />
+          <Field label="Warranty Period" name="warranty" placeholder="e.g. 36 Months, 48 Months" form={form} errors={errors} onSet={set} onClearError={clearError} />
+          <Field label="Description" name="description" as="textarea" placeholder="Brief product description..." form={form} errors={errors} onSet={set} onClearError={clearError} />
 
           <div className="flex items-center justify-between p-4 rounded-xl bg-dark-3 border border-white/10">
             <div>
