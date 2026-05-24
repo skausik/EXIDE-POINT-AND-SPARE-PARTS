@@ -1,12 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Plus, Edit2, Trash2, Save, X, Upload, Eye, EyeOff,
-  LayoutDashboard, Package, LogOut, Search, CheckCircle2,
-  AlertCircle, Zap, Image as ImageIcon, ToggleLeft, ToggleRight
+  Package, LogOut, Search, CheckCircle2,
+  AlertCircle, Zap, Image as ImageIcon, ToggleLeft, ToggleRight,
+  FileText, ChevronDown, ChevronUp, Battery, Trash,
 } from 'lucide-react';
-import { BRANDS, getProducts, addProduct, updateProduct, deleteProduct, Product } from '@/lib/data';
+import {
+  BRANDS, getProducts, addProduct, updateProduct, deleteProduct, Product,
+  getSiteContent, saveSiteContent, SiteContent,
+  getBrandImages, setBrandImage, removeBrandImage,
+} from '@/lib/data';
 
 // ──────────────────────────────────────────────
 // Auth
@@ -43,6 +48,23 @@ function validateForm(data: Partial<Product>): FormErrors {
 
 const MAX_IMAGE_SIZE_MB = 2;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+function readImageFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      reject(new Error('Only JPG, PNG, and WebP images are allowed.'));
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+      reject(new Error(`Image must be under ${MAX_IMAGE_SIZE_MB}MB. Current: ${(file.size / 1024 / 1024).toFixed(2)}MB`));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target?.result as string);
+    reader.onerror = () => reject(new Error('Failed to read file.'));
+    reader.readAsDataURL(file);
+  });
+}
 
 // ──────────────────────────────────────────────
 // Toast
@@ -90,7 +112,6 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
 
   return (
     <div className="min-h-screen bg-dark flex items-center justify-center px-4">
-      {/* BG grid */}
       <div
         className="absolute inset-0 opacity-5"
         style={{
@@ -104,7 +125,6 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
         onSubmit={handleSubmit}
         className={`relative z-10 w-full max-w-sm bg-dark-2 border border-white/10 rounded-2xl p-8 shadow-2xl ${shake ? 'animate-[shake_0.5s_ease]' : ''}`}
       >
-        {/* Logo */}
         <div className="flex justify-center mb-8">
           <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center glow-red">
             <Zap className="w-9 h-9 text-white fill-white" />
@@ -186,23 +206,15 @@ function ProductForm({ initial, onSave, onClose }: ProductFormProps) {
   const set = (key: string, value: string | boolean) =>
     setForm(f => ({ ...f, [key]: value }));
 
-  const handleImageFile = (file: File) => {
+  const handleImageFile = async (file: File) => {
     setImgErr('');
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      setImgErr('Only JPG, PNG, and WebP images are allowed.');
-      return;
-    }
-    if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
-      setImgErr(`Image must be under ${MAX_IMAGE_SIZE_MB}MB. Current size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = e => {
-      const base64 = e.target?.result as string;
+    try {
+      const base64 = await readImageFile(file);
       set('image', base64);
       setImgPreview(base64);
-    };
-    reader.readAsDataURL(file);
+    } catch (e: any) {
+      setImgErr(e.message);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -279,7 +291,6 @@ function ProductForm({ initial, onSave, onClose }: ProductFormProps) {
         onSubmit={handleSubmit}
         className="relative z-10 w-full max-w-2xl bg-dark-2 border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <h2 className="text-xl font-bold text-white tracking-wide">
             {initial ? 'Edit Product' : 'Add New Product'}
@@ -289,7 +300,6 @@ function ProductForm({ initial, onSave, onClose }: ProductFormProps) {
           </button>
         </div>
 
-        {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
           {/* Image Upload */}
           <div>
@@ -357,7 +367,6 @@ function ProductForm({ initial, onSave, onClose }: ProductFormProps) {
           <Field label="Warranty Period" name="warranty" placeholder="e.g. 36 Months, 48 Months" />
           <Field label="Description" name="description" as="textarea" placeholder="Brief product description..." />
 
-          {/* In Stock toggle */}
           <div className="flex items-center justify-between p-4 rounded-xl bg-dark-3 border border-white/10">
             <div>
               <div className="text-white font-semibold">In Stock</div>
@@ -375,7 +384,6 @@ function ProductForm({ initial, onSave, onClose }: ProductFormProps) {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex gap-3 px-6 py-4 border-t border-white/10 bg-dark-2">
           <button
             type="button"
@@ -426,8 +434,402 @@ function DeleteModal({ name, onConfirm, onClose }: { name: string; onConfirm: ()
 }
 
 // ──────────────────────────────────────────────
+// Site Content Editor
+// ──────────────────────────────────────────────
+function SiteContentEditor({ onToast }: { onToast: (msg: string, type?: 'success' | 'error') => void }) {
+  const [content, setContent] = useState<SiteContent>(getSiteContent());
+  const [brandImages, setBrandImagesState] = useState<Record<string, string>>(getBrandImages());
+  const [openSection, setOpenSection] = useState<string | null>('general');
+  const [saving, setSaving] = useState(false);
+  const brandFileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const update = useCallback(<K extends keyof SiteContent>(key: K, value: SiteContent[K]) => {
+    setContent(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const updateNested = useCallback(<K extends keyof SiteContent>(
+    key: K,
+    index: number,
+    field: string,
+    value: string
+  ) => {
+    setContent(prev => {
+      const arr = [...(prev[key] as any[])];
+      arr[index] = { ...arr[index], [field]: value };
+      return { ...prev, [key]: arr };
+    });
+  }, []);
+
+  const handleSave = () => {
+    setSaving(true);
+    saveSiteContent(content);
+    // Trigger storage event for same-tab updates (components listen to storage)
+    window.dispatchEvent(new Event('storage'));
+    setTimeout(() => {
+      setSaving(false);
+      onToast('Site content saved! Changes are live on the website.', 'success');
+    }, 300);
+  };
+
+  const handleBrandImage = async (brandId: string, file: File) => {
+    try {
+      const base64 = await readImageFile(file);
+      setBrandImage(brandId, base64);
+      setBrandImagesState(getBrandImages());
+      window.dispatchEvent(new Event('storage'));
+      onToast(`Brand image updated for ${BRANDS.find(b => b.id === brandId)?.name}`, 'success');
+    } catch (e: any) {
+      onToast(e.message, 'error');
+    }
+  };
+
+  const handleRemoveBrandImage = (brandId: string) => {
+    removeBrandImage(brandId);
+    setBrandImagesState(getBrandImages());
+    window.dispatchEvent(new Event('storage'));
+    onToast('Brand image removed.', 'success');
+  };
+
+  const Section = ({ id, title, children }: { id: string; title: string; children: React.ReactNode }) => (
+    <div className="bg-dark-3 border border-white/10 rounded-2xl overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpenSection(openSection === id ? null : id)}
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/5 transition-colors"
+      >
+        <span className="text-white font-bold tracking-wide">{title}</span>
+        {openSection === id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+      </button>
+      {openSection === id && (
+        <div className="px-5 pb-5 border-t border-white/10 space-y-4 pt-4">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+
+  const Field = ({
+    label, value, onChange, placeholder, multiline = false, hint,
+  }: {
+    label: string; value: string; onChange: (v: string) => void; placeholder?: string; multiline?: boolean; hint?: string;
+  }) => (
+    <div>
+      <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-1">
+        {label}
+      </label>
+      {hint && <p className="text-gray-600 text-xs mb-1">{hint}</p>}
+      {multiline ? (
+        <textarea
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={3}
+          className="admin-input resize-none text-sm"
+        />
+      ) : (
+        <input
+          type="text"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="admin-input text-sm"
+        />
+      )}
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <h2 className="text-xl font-bold text-white">Site Content</h2>
+          <p className="text-gray-500 text-xs mt-0.5">Edit all text and content across the website</p>
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold text-sm tracking-widest uppercase rounded-xl glow-red transition-all hover:scale-105 disabled:opacity-60"
+        >
+          <Save className="w-4 h-4" />
+          {saving ? 'Saving...' : 'Save All'}
+        </button>
+      </div>
+
+      {/* Brand Images */}
+      <Section id="brandimages" title="🔋 Brand Images (Battery Photos)">
+        <p className="text-gray-500 text-xs mb-3">
+          Upload battery/brand images for each brand. These replace the emoji icons in the brand grid and brand pages.
+          Recommended: transparent PNG, square, under 2MB.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {BRANDS.map(brand => {
+            const img = brandImages[brand.id];
+            return (
+              <div key={brand.id} className="flex flex-col items-center gap-2">
+                <div
+                  className="w-full aspect-square rounded-xl overflow-hidden flex items-center justify-center cursor-pointer border-2 border-dashed transition-all hover:border-primary/50"
+                  style={{ background: `${brand.color}11`, borderColor: img ? `${brand.color}66` : undefined }}
+                  onClick={() => brandFileRefs.current[brand.id]?.click()}
+                >
+                  {img ? (
+                    <img src={img} alt={brand.name} className="w-full h-full object-contain p-2" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-gray-600">
+                      <span className="text-3xl">{brand.logo}</span>
+                      <Upload className="w-4 h-4" />
+                    </div>
+                  )}
+                </div>
+                <div className="text-center">
+                  <div className="text-white text-xs font-bold">{brand.name}</div>
+                  <div className="flex gap-1 mt-1 justify-center">
+                    <button
+                      type="button"
+                      onClick={() => brandFileRefs.current[brand.id]?.click()}
+                      className="text-[10px] text-primary hover:text-primary-light font-semibold"
+                    >
+                      {img ? 'Change' : 'Upload'}
+                    </button>
+                    {img && (
+                      <>
+                        <span className="text-gray-700">·</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveBrandImage(brand.id)}
+                          className="text-[10px] text-red-400 hover:text-red-300 font-semibold"
+                        >
+                          Remove
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <input
+                  ref={el => { brandFileRefs.current[brand.id] = el; }}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) handleBrandImage(brand.id, file);
+                    e.target.value = '';
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </Section>
+
+      {/* General / Navbar */}
+      <Section id="general" title="🔷 Navbar & General">
+        <div className="grid sm:grid-cols-3 gap-4">
+          <Field label="Site Title" value={content.navbarTitle} onChange={v => update('navbarTitle', v)} placeholder="EXIDE POINT" />
+          <Field label="Site Subtitle" value={content.navbarSubtitle} onChange={v => update('navbarSubtitle', v)} placeholder="& Spare Parts" />
+          <Field label="Phone Number" value={content.navPhone} onChange={v => update('navPhone', v)} placeholder="+918513908681" hint="Used in Call Now buttons (no spaces)" />
+        </div>
+      </Section>
+
+      {/* Hero Slides */}
+      <Section id="hero" title="🎯 Hero Slides">
+        {content.heroSlides.map((slide, i) => (
+          <div key={i} className="border border-white/10 rounded-xl p-4 space-y-3">
+            <div className="text-xs font-bold text-primary tracking-widest uppercase mb-2">Slide {i + 1}</div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <Field label="Title" value={slide.title} onChange={v => updateNested('heroSlides', i, 'title', v)} placeholder="POWER YOUR LIFE" />
+              <Field label="Subtitle" value={slide.subtitle} onChange={v => updateNested('heroSlides', i, 'subtitle', v)} placeholder="Premium Battery Solutions" />
+            </div>
+            <Field label="Badge Text" value={slide.badge} onChange={v => updateNested('heroSlides', i, 'badge', v)} placeholder="AUTHORIZED MULTI BRAND RETAILER" />
+            <Field label="Description" value={slide.desc} onChange={v => updateNested('heroSlides', i, 'desc', v)} multiline placeholder="Slide description..." />
+            <Field label="Icon (emoji)" value={slide.icon} onChange={v => updateNested('heroSlides', i, 'icon', v)} placeholder="⚡" hint="Any emoji shown in the rotating circle" />
+          </div>
+        ))}
+      </Section>
+
+      {/* Hero Stats */}
+      <Section id="stats" title="📊 Hero Stats Bar">
+        {content.heroStats.map((stat, i) => (
+          <div key={i} className="grid sm:grid-cols-2 gap-3">
+            <Field label={`Stat ${i + 1} Label`} value={stat.label} onChange={v => updateNested('heroStats', i, 'label', v)} placeholder="Brands Available" />
+            <Field label={`Stat ${i + 1} Value`} value={stat.value} onChange={v => updateNested('heroStats', i, 'value', v)} placeholder="8+" />
+          </div>
+        ))}
+      </Section>
+
+      {/* Brands Section */}
+      <Section id="brands" title="🏷️ Brands Section">
+        <Field label="Section Label (small text)" value={content.brandsSectionLabel} onChange={v => update('brandsSectionLabel', v)} placeholder="Our Collection" />
+        <Field label="Section Title (big heading)" value={content.brandsSectionTitle} onChange={v => update('brandsSectionTitle', v)} placeholder="PREMIUM BRANDS" />
+        <Field label="Section Description" value={content.brandsSectionDesc} onChange={v => update('brandsSectionDesc', v)} multiline placeholder="We stock only genuine..." />
+      </Section>
+
+      {/* Services Section */}
+      <Section id="services" title="⚙️ Services Section">
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Field label="Section Label" value={content.servicesSectionLabel} onChange={v => update('servicesSectionLabel', v)} placeholder="What We Offer" />
+          <Field label="Section Title" value={content.servicesSectionTitle} onChange={v => update('servicesSectionTitle', v)} placeholder="OUR SERVICES" />
+        </div>
+        <div className="mt-2 space-y-3">
+          {content.services.map((svc, i) => (
+            <div key={i} className="border border-white/10 rounded-xl p-3 space-y-2">
+              <div className="text-xs font-bold text-gray-500 tracking-widest uppercase">Service {i + 1}</div>
+              <Field label="Title" value={svc.title} onChange={v => updateNested('services', i, 'title', v)} />
+              <Field label="Description" value={svc.desc} onChange={v => updateNested('services', i, 'desc', v)} multiline />
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {/* About Section */}
+      <Section id="about" title="ℹ️ About Section">
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Field label="Section Label" value={content.aboutLabel} onChange={v => update('aboutLabel', v)} placeholder="About Us" />
+          <Field label="Card Title" value={content.aboutCardTitle} onChange={v => update('aboutCardTitle', v)} placeholder="EXIDE POINT" />
+        </div>
+        <Field label="Main Heading" value={content.aboutTitle} onChange={v => update('aboutTitle', v)} placeholder="YOUR TRUSTED BATTERY PARTNER" />
+        <Field label="Card Subtitle" value={content.aboutCardSubtitle} onChange={v => update('aboutCardSubtitle', v)} placeholder="& Spare Parts" />
+        <Field label="Paragraph 1" value={content.aboutPara1} onChange={v => update('aboutPara1', v)} multiline />
+        <Field label="Paragraph 2" value={content.aboutPara2} onChange={v => update('aboutPara2', v)} multiline />
+        <div>
+          <label className="block text-xs font-bold tracking-widest uppercase text-gray-400 mb-1">Feature Bullets (one per line)</label>
+          <textarea
+            value={content.aboutFeatures.join('\n')}
+            onChange={e => update('aboutFeatures', e.target.value.split('\n').filter(Boolean))}
+            rows={6}
+            className="admin-input resize-none text-sm"
+            placeholder="Authorized dealer for 8+ battery brands&#10;Free battery testing..."
+          />
+        </div>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <Field label="Location" value={content.aboutLocation} onChange={v => update('aboutLocation', v)} />
+          <Field label="Phone (display)" value={content.aboutPhone} onChange={v => update('aboutPhone', v)} />
+          <Field label="Hours" value={content.aboutHours} onChange={v => update('aboutHours', v)} />
+        </div>
+      </Section>
+
+      {/* Footer */}
+      <Section id="footer" title="🦶 Footer">
+        <Field label="Footer Description" value={content.footerDesc} onChange={v => update('footerDesc', v)} multiline />
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Field label="Facebook URL" value={content.footerFacebookUrl} onChange={v => update('footerFacebookUrl', v)} />
+          <Field label="Email" value={content.footerEmail} onChange={v => update('footerEmail', v)} />
+        </div>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <Field label="Address" value={content.footerAddress} onChange={v => update('footerAddress', v)} />
+          <Field label="Phone" value={content.footerPhone} onChange={v => update('footerPhone', v)} />
+          <Field label="Working Hours" value={content.footerHours} onChange={v => update('footerHours', v)} />
+        </div>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Field label="Creator Name" value={content.footerCreatorName} onChange={v => update('footerCreatorName', v)} />
+          <Field label="Creator URL (Instagram/site)" value={content.footerCreatorUrl} onChange={v => update('footerCreatorUrl', v)} />
+        </div>
+      </Section>
+
+      {/* Save button at bottom */}
+      <div className="flex justify-end pt-2">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 px-8 py-3 bg-primary hover:bg-primary-dark text-white font-bold text-sm tracking-widest uppercase rounded-xl glow-red transition-all hover:scale-105 disabled:opacity-60"
+        >
+          <Save className="w-4 h-4" />
+          {saving ? 'Saving...' : 'Save All Changes'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Product Row
+// ──────────────────────────────────────────────
+function ProductRow({
+  product, onEdit, onDelete, onToggleStock,
+}: {
+  product: Product;
+  onEdit: (p: Product) => void;
+  onDelete: (p: Product) => void;
+  onToggleStock: () => void;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const brand = BRANDS.find(b => b.name === product.brand);
+
+  return (
+    <div className="bg-dark-3 border border-white/5 hover:border-primary/20 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 transition-all">
+      {/* Image */}
+      <div className="w-20 h-20 rounded-xl overflow-hidden bg-dark-4 shrink-0">
+        {product.image && !imgError ? (
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full h-full object-contain p-1"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="w-full h-full img-placeholder rounded-xl text-2xl">
+            {brand?.logo || <ImageIcon className="w-8 h-8" />}
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-2 mb-1">
+          <h3 className="text-white font-bold text-base truncate">{product.name}</h3>
+          <span
+            className="text-xs px-2 py-0.5 rounded-full font-bold"
+            style={{ background: `${brand?.color || '#CC0000'}22`, color: brand?.color || '#CC0000', border: `1px solid ${brand?.color || '#CC0000'}44` }}
+          >
+            {product.brand}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+          <span>📦 {product.category}</span>
+          <span>🛡️ {product.warranty}</span>
+          <span className="text-accent font-bold text-sm">₹{product.price.toLocaleString('en-IN')}</span>
+        </div>
+        <p className="text-gray-600 text-xs mt-1 truncate">{product.description}</p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          onClick={onToggleStock}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            product.inStock
+              ? 'bg-green-900/30 text-green-400 border border-green-800/50 hover:bg-green-900/50'
+              : 'bg-red-900/30 text-red-400 border border-red-800/50 hover:bg-red-900/50'
+          }`}
+        >
+          {product.inStock ? '● In Stock' : '● Out'}
+        </button>
+
+        <button
+          onClick={() => onEdit(product)}
+          className="p-2 rounded-lg bg-dark-4 border border-white/10 text-gray-400 hover:text-white hover:border-primary/40 transition-all"
+          title="Edit"
+        >
+          <Edit2 className="w-4 h-4" />
+        </button>
+
+        <button
+          onClick={() => onDelete(product)}
+          className="p-2 rounded-lg bg-dark-4 border border-white/10 text-gray-400 hover:text-red-400 hover:border-red-900/50 transition-all"
+          title="Delete"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────
 // Main Admin Panel
 // ──────────────────────────────────────────────
+type Tab = 'products' | 'content';
+
 export default function AdminPanel() {
   const [authed, setAuthed] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -437,6 +839,7 @@ export default function AdminPanel() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>('products');
 
   useEffect(() => {
     if (sessionStorage.getItem('admin_auth') === '1') setAuthed(true);
@@ -534,10 +937,28 @@ export default function AdminPanel() {
 
         {/* Nav */}
         <nav className="flex-1 p-4 space-y-2">
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/10 border border-primary/30 text-primary font-bold text-sm tracking-wide">
+          <button
+            onClick={() => setActiveTab('products')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all ${
+              activeTab === 'products'
+                ? 'bg-primary/10 border border-primary/30 text-primary'
+                : 'text-gray-500 hover:text-white hover:bg-white/5 border border-transparent'
+            }`}
+          >
             <Package className="w-4 h-4" />
             Products
-          </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('content')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all ${
+              activeTab === 'content'
+                ? 'bg-primary/10 border border-primary/30 text-primary'
+                : 'text-gray-500 hover:text-white hover:bg-white/5 border border-transparent'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            Site Content
+          </button>
         </nav>
 
         {/* Stats */}
@@ -568,156 +989,86 @@ export default function AdminPanel() {
 
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Topbar */}
-        <header className="bg-dark-2 border-b border-white/10 px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-white tracking-wide">Product Management</h1>
-            <p className="text-gray-500 text-xs mt-0.5">{filtered.length} of {products.length} products</p>
-          </div>
-          <button
-            onClick={() => { setEditing(null); setShowForm(true); }}
-            className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold text-sm tracking-widest uppercase rounded-xl glow-red transition-all hover:scale-105"
-          >
-            <Plus className="w-4 h-4" />
-            Add Product
-          </button>
-        </header>
+        {activeTab === 'products' ? (
+          <>
+            {/* Topbar */}
+            <header className="bg-dark-2 border-b border-white/10 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-bold text-white tracking-wide">Product Management</h1>
+                <p className="text-gray-500 text-xs mt-0.5">{filtered.length} of {products.length} products</p>
+              </div>
+              <button
+                onClick={() => { setEditing(null); setShowForm(true); }}
+                className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold text-sm tracking-widest uppercase rounded-xl glow-red transition-all hover:scale-105"
+              >
+                <Plus className="w-4 h-4" />
+                Add Product
+              </button>
+            </header>
 
-        {/* Filters */}
-        <div className="bg-dark-2 border-b border-white/10 px-6 py-3 flex flex-col sm:flex-row gap-3">
-          {/* Search */}
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-dark-3 border border-white/10 focus:border-primary/50 text-white rounded-xl text-sm outline-none transition-colors"
-              style={{ fontFamily: 'Rajdhani, sans-serif' }}
-            />
-          </div>
-
-          {/* Brand filter */}
-          <select
-            value={brandFilter}
-            onChange={e => setBrandFilter(e.target.value)}
-            className="px-4 py-2 bg-dark-3 border border-white/10 focus:border-primary/50 text-white rounded-xl text-sm outline-none transition-colors"
-            style={{ fontFamily: 'Rajdhani, sans-serif' }}
-          >
-            <option value="All">All Brands</option>
-            {BRANDS.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
-          </select>
-        </div>
-
-        {/* Table */}
-        <div className="flex-1 overflow-auto p-6">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64">
-              <Package className="w-12 h-12 text-gray-700 mb-3" />
-              <p className="text-gray-500 font-semibold">No products found</p>
-              <p className="text-gray-700 text-sm mt-1">Add a product to get started.</p>
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {filtered.map(product => (
-                <ProductRow
-                  key={product.id}
-                  product={product}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onToggleStock={() => {
-                    updateProduct(product.id, { inStock: !product.inStock });
-                    setProducts(getProducts());
-                    showToast(`Stock status updated.`);
-                  }}
+            {/* Filters */}
+            <div className="bg-dark-2 border-b border-white/10 px-6 py-3 flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-dark-3 border border-white/10 focus:border-primary/50 text-white rounded-xl text-sm outline-none transition-colors"
+                  style={{ fontFamily: 'Rajdhani, sans-serif' }}
                 />
-              ))}
+              </div>
+
+              <select
+                value={brandFilter}
+                onChange={e => setBrandFilter(e.target.value)}
+                className="px-4 py-2 bg-dark-3 border border-white/10 focus:border-primary/50 text-white rounded-xl text-sm outline-none transition-colors"
+                style={{ fontFamily: 'Rajdhani, sans-serif' }}
+              >
+                <option value="All">All Brands</option>
+                {BRANDS.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+              </select>
             </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function ProductRow({
-  product, onEdit, onDelete, onToggleStock,
-}: {
-  product: Product;
-  onEdit: (p: Product) => void;
-  onDelete: (p: Product) => void;
-  onToggleStock: () => void;
-}) {
-  const [imgError, setImgError] = useState(false);
-  const brand = BRANDS.find(b => b.name === product.brand);
-
-  return (
-    <div className="bg-dark-3 border border-white/5 hover:border-primary/20 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 transition-all">
-      {/* Image */}
-      <div className="w-20 h-20 rounded-xl overflow-hidden bg-dark-4 shrink-0">
-        {product.image && !imgError ? (
-          <img
-            src={product.image}
-            alt={product.name}
-            className="w-full h-full object-contain p-1"
-            onError={() => setImgError(true)}
-          />
+            {/* Table */}
+            <div className="flex-1 overflow-auto p-6">
+              {filtered.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64">
+                  <Package className="w-12 h-12 text-gray-700 mb-3" />
+                  <p className="text-gray-500 font-semibold">No products found</p>
+                  <p className="text-gray-700 text-sm mt-1">Add a product to get started.</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {filtered.map(product => (
+                    <ProductRow
+                      key={product.id}
+                      product={product}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onToggleStock={() => {
+                        updateProduct(product.id, { inStock: !product.inStock });
+                        setProducts(getProducts());
+                        showToast('Stock status updated.');
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
         ) : (
-          <div className="w-full h-full img-placeholder rounded-xl text-2xl">
-            {brand?.logo || <ImageIcon className="w-8 h-8" />}
-          </div>
+          <>
+            <header className="bg-dark-2 border-b border-white/10 px-6 py-4">
+              <h1 className="text-xl font-bold text-white tracking-wide">Site Content Editor</h1>
+              <p className="text-gray-500 text-xs mt-0.5">All changes are saved to browser storage and instantly reflected on the site</p>
+            </header>
+            <div className="flex-1 overflow-auto p-6">
+              <SiteContentEditor onToast={showToast} />
+            </div>
+          </>
         )}
-      </div>
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-2 mb-1">
-          <h3 className="text-white font-bold text-base truncate">{product.name}</h3>
-          <span
-            className="text-xs px-2 py-0.5 rounded-full font-bold"
-            style={{ background: `${brand?.color || '#CC0000'}22`, color: brand?.color || '#CC0000', border: `1px solid ${brand?.color || '#CC0000'}44` }}
-          >
-            {product.brand}
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-          <span>📦 {product.category}</span>
-          <span>🛡️ {product.warranty}</span>
-          <span className="text-accent font-bold text-sm">₹{product.price.toLocaleString('en-IN')}</span>
-        </div>
-        <p className="text-gray-600 text-xs mt-1 truncate">{product.description}</p>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-2 shrink-0">
-        {/* Stock toggle */}
-        <button
-          onClick={onToggleStock}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-            product.inStock
-              ? 'bg-green-900/30 text-green-400 border border-green-800/50 hover:bg-green-900/50'
-              : 'bg-red-900/30 text-red-400 border border-red-800/50 hover:bg-red-900/50'
-          }`}
-        >
-          {product.inStock ? '● In Stock' : '● Out'}
-        </button>
-
-        <button
-          onClick={() => onEdit(product)}
-          className="p-2 rounded-lg bg-dark-4 border border-white/10 text-gray-400 hover:text-white hover:border-primary/40 transition-all"
-          title="Edit"
-        >
-          <Edit2 className="w-4 h-4" />
-        </button>
-
-        <button
-          onClick={() => onDelete(product)}
-          className="p-2 rounded-lg bg-dark-4 border border-white/10 text-gray-400 hover:text-red-400 hover:border-red-900/50 transition-all"
-          title="Delete"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
       </div>
     </div>
   );

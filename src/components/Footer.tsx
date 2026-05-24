@@ -1,8 +1,23 @@
+'use client';
+
 import Link from 'next/link';
 import { Zap, Phone, MapPin, Clock, Facebook, Mail } from 'lucide-react';
-import { BRANDS } from '@/lib/data';
+import { BRANDS, getSiteContent } from '@/lib/data';
+import { useEffect, useState } from 'react';
+import type { SiteContent } from '@/lib/data';
 
 export default function Footer() {
+  const [content, setContent] = useState<SiteContent | null>(null);
+
+  useEffect(() => {
+    setContent(getSiteContent());
+    const onStorage = () => setContent(getSiteContent());
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  if (!content) return null;
+
   return (
     <footer className="footer-bg pt-16 pb-8" id="contact">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -15,16 +30,16 @@ export default function Footer() {
               </div>
               <div>
                 <div className="text-xl text-white font-bold" style={{ fontFamily: 'Bebas Neue, serif', letterSpacing: '0.05em' }}>
-                  EXIDE POINT
+                  {content.navbarTitle}
                 </div>
-                <div className="text-[10px] text-primary tracking-widest uppercase">& Spare Parts</div>
+                <div className="text-[10px] text-primary tracking-widest uppercase">{content.navbarSubtitle}</div>
               </div>
             </div>
             <p className="text-gray-500 text-sm leading-relaxed mb-4">
-              Your trusted destination for genuine batteries — cars, bikes, inverters & solar. Quality products, expert advice.
+              {content.footerDesc}
             </p>
             <a
-              href="https://www.facebook.com/people/EXIDE-point-and-spare-parts/100069745907389/"
+              href={content.footerFacebookUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm font-semibold transition-colors"
@@ -82,15 +97,15 @@ export default function Footer() {
                 <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div>
                   <div className="text-white text-sm font-semibold">Address</div>
-                  <div className="text-gray-500 text-xs mt-0.5">Your City, West Bengal, India</div>
+                  <div className="text-gray-500 text-xs mt-0.5">{content.footerAddress}</div>
                 </div>
               </div>
               <div className="flex gap-3">
                 <Phone className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div>
                   <div className="text-white text-sm font-semibold">Phone</div>
-                  <a href="tel:+918513908681" className="text-gray-500 text-xs hover:text-primary transition-colors">
-                    +91 8513908681
+                  <a href={`tel:${content.navPhone}`} className="text-gray-500 text-xs hover:text-primary transition-colors">
+                    {content.footerPhone}
                   </a>
                 </div>
               </div>
@@ -98,15 +113,14 @@ export default function Footer() {
                 <Clock className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div>
                   <div className="text-white text-sm font-semibold">Working Hours</div>
-                  <div className="text-gray-500 text-xs mt-0.5">Mon–Sat: 9 AM – 8 PM</div>
-                  <div className="text-gray-600 text-xs">Sun: 10 AM – 4 PM</div>
+                  <div className="text-gray-500 text-xs mt-0.5">{content.footerHours}</div>
                 </div>
               </div>
               <div className="flex gap-3">
                 <Mail className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div>
                   <div className="text-white text-sm font-semibold">Email</div>
-                  <div className="text-gray-500 text-xs">exidepoint@gmail.com</div>
+                  <div className="text-gray-500 text-xs">{content.footerEmail}</div>
                 </div>
               </div>
             </div>
@@ -119,14 +133,13 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-600">
           <div>
-            © {new Date().getFullYear()} Exide Point & Spare Parts. All rights reserved.
+            © {new Date().getFullYear()} {content.navbarTitle} {content.navbarSubtitle}. All rights reserved.
           </div>
 
-          {/* Creator credit */}
           <div className="footer-social flex items-center gap-2">
             <span className="footer-copy text-gray-600">Website created by</span>
             <a
-              href="https://instagram.com/k__k_santra"
+              href={content.footerCreatorUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="ig-link"
@@ -162,7 +175,7 @@ export default function Footer() {
                   strokeLinejoin="round"
                 />
               </svg>
-              KAUSIK SANTRA
+              {content.footerCreatorName}
             </a>
           </div>
         </div>

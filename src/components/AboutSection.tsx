@@ -1,17 +1,21 @@
 'use client';
 
 import { CheckCircle2, MapPin, Phone, Clock } from 'lucide-react';
-
-const features = [
-  'Authorized dealer for 8+ battery brands',
-  'Free battery testing & health checkup',
-  'Genuine products with valid warranty cards',
-  'Expert installation & old battery exchange',
-  'Competitive pricing & seasonal offers',
-  'Emergency replacement assistance',
-];
+import { useEffect, useState } from 'react';
+import { getSiteContent, SiteContent } from '@/lib/data';
 
 export default function AboutSection() {
+  const [content, setContent] = useState<SiteContent | null>(null);
+
+  useEffect(() => {
+    setContent(getSiteContent());
+    const onStorage = () => setContent(getSiteContent());
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  if (!content) return null;
+
   return (
     <section id="about" className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="grid lg:grid-cols-2 gap-16 items-center">
@@ -29,10 +33,10 @@ export default function AboutSection() {
               className="text-4xl text-center text-white mb-2"
               style={{ fontFamily: 'Bebas Neue, serif', letterSpacing: '0.05em' }}
             >
-              EXIDE POINT
+              {content.aboutCardTitle}
             </h3>
             <p className="text-center text-primary font-semibold tracking-widest text-sm uppercase mb-6">
-              & Spare Parts
+              {content.aboutCardSubtitle}
             </p>
             <div className="section-divider mb-6" />
             {/* Info */}
@@ -41,21 +45,21 @@ export default function AboutSection() {
                 <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <div>
                   <div className="text-white font-semibold">Location</div>
-                  <div className="text-gray-400 text-sm">Your City, West Bengal, India</div>
+                  <div className="text-gray-400 text-sm">{content.aboutLocation}</div>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Phone className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <div>
                   <div className="text-white font-semibold">Phone</div>
-                  <div className="text-gray-400 text-sm">+91 8513908681</div>
+                  <div className="text-gray-400 text-sm">{content.aboutPhone}</div>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Clock className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <div>
                   <div className="text-white font-semibold">Hours</div>
-                  <div className="text-gray-400 text-sm">Mon–Sat: 9 AM – 8 PM</div>
+                  <div className="text-gray-400 text-sm">{content.aboutHours}</div>
                 </div>
               </div>
             </div>
@@ -69,23 +73,23 @@ export default function AboutSection() {
 
         {/* Right content */}
         <div>
-          <span className="text-primary text-sm font-bold tracking-widest uppercase">About Us</span>
+          <span className="text-primary text-sm font-bold tracking-widest uppercase">{content.aboutLabel}</span>
           <h2
             className="text-5xl md:text-6xl text-white mt-2 mb-6"
             style={{ fontFamily: 'Bebas Neue, serif', letterSpacing: '0.03em' }}
           >
-            YOUR TRUSTED BATTERY PARTNER
+            {content.aboutTitle}
           </h2>
           <p className="text-gray-400 leading-relaxed mb-4 text-lg">
-            Exide Point & Spare Parts has been serving the community for over a decade, providing top-quality batteries for every need — from two-wheelers to industrial inverters.
+            {content.aboutPara1}
           </p>
           <p className="text-gray-400 leading-relaxed mb-8">
-            We believe in honest service, genuine products, and building long-term relationships with our customers. Every battery we sell comes with complete manufacturer warranty and our personal service guarantee.
+            {content.aboutPara2}
           </p>
 
           {/* Features */}
           <ul className="space-y-3 mb-8">
-            {features.map(f => (
+            {content.aboutFeatures.map(f => (
               <li key={f} className="flex items-start gap-3">
                 <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <span className="text-gray-300 font-medium">{f}</span>

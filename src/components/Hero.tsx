@@ -2,70 +2,49 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Zap, Shield, Award } from 'lucide-react';
-
-const slides = [
-  {
-    id: 1,
-    title: 'POWER YOUR LIFE',
-    subtitle: 'Premium Battery Solutions',
-    desc: 'Genuine batteries for cars, bikes, inverters & solar. Best prices, expert advice.',
-    bg: 'from-red-950 via-dark to-dark',
-    icon: '⚡',
-    badge: 'AUTHORIZED MULTI BRAND RETAILER',
-  },
-  {
-    id: 2,
-    title: 'NEVER RUN OUT',
-    subtitle: 'Inverter & UPS Batteries',
-    desc: 'Keep your home powered 24/7 with top-brand inverter batteries and free installation.',
-    bg: 'from-zinc-900 via-dark to-dark',
-    icon: '🔋',
-    badge: '48-Month Warranty Available',
-  },
-  {
-    id: 3,
-    title: 'TRUSTED QUALITY',
-    subtitle: '8 Premium Brands In-Store',
-    desc: 'Exide, Amaron, Luminous, Livguard, Microtek and more — all under one roof.',
-    bg: 'from-red-900 via-dark to-dark',
-    icon: '🏆',
-    badge: '1000+ Happy Customers',
-  },
-];
-
-const stats = [
-  { icon: Shield, label: 'Genuine Products', value: '100%' },
-  { icon: Award, label: 'Brands Available', value: '8+' },
-  { icon: Zap, label: 'Years Experience', value: '10+' },
-];
+import { getSiteContent, SiteContent } from '@/lib/data';
 
 export default function Hero() {
   const [current, setCurrent] = useState(0);
   const [animating, setAnimating] = useState(false);
+  const [content, setContent] = useState<SiteContent | null>(null);
+
+  useEffect(() => {
+    setContent(getSiteContent());
+    const onStorage = () => setContent(getSiteContent());
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
+  const slides = content?.heroSlides ?? [];
+  const stats = content?.heroStats ?? [];
 
   const goTo = useCallback((idx: number) => {
-    if (animating) return;
+    if (animating || slides.length === 0) return;
     setAnimating(true);
     setCurrent(idx);
     setTimeout(() => setAnimating(false), 600);
-  }, [animating]);
+  }, [animating, slides.length]);
 
-  const next = useCallback(() => goTo((current + 1) % slides.length), [current, goTo]);
-  const prev = useCallback(() => goTo((current - 1 + slides.length) % slides.length), [current, goTo]);
+  const next = useCallback(() => goTo((current + 1) % (slides.length || 1)), [current, goTo, slides.length]);
+  const prev = useCallback(() => goTo((current - 1 + (slides.length || 1)) % (slides.length || 1)), [current, goTo, slides.length]);
 
   useEffect(() => {
+    if (slides.length === 0) return;
     const t = setInterval(next, 5000);
     return () => clearInterval(t);
-  }, [next]);
+  }, [next, slides.length]);
 
-  const slide = slides[current];
+  if (!content || slides.length === 0) return null;
+
+  const slide = slides[current] ?? slides[0];
+  const bgs = ['from-red-950 via-dark to-dark', 'from-zinc-900 via-dark to-dark', 'from-red-900 via-dark to-dark'];
+  const bg = bgs[current % bgs.length];
 
   return (
     <section className="relative min-h-screen flex flex-col overflow-hidden">
       {/* Background */}
-      <div
-        className={`absolute inset-0 bg-gradient-to-br ${slide.bg} transition-all duration-700`}
-      />
+      <div className={`absolute inset-0 bg-gradient-to-br ${bg} transition-all duration-700`} />
 
       {/* Grid pattern */}
       <div
@@ -123,7 +102,7 @@ export default function Hero() {
                 View Batteries
               </a>
               <a
-                href="tel:+918513908681"
+                href={`tel:${content.navPhone}`}
                 className="px-8 py-4 border border-white/20 hover:border-primary/60 text-white font-bold text-sm tracking-widest uppercase rounded-lg backdrop-blur-sm hover:bg-primary/10 transition-all"
               >
                 Call Us

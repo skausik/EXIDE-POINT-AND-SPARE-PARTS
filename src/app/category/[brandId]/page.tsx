@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Search, Filter, ShoppingBag, Zap } from 'lucide-react';
-import { BRANDS, getProducts, Product } from '@/lib/data';
+import { BRANDS, getProducts, getBrandImages, Product } from '@/lib/data';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import FloatingButtons from '@/components/FloatingButtons';
@@ -16,6 +16,7 @@ export default function CategoryPage() {
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('All');
   const [loading, setLoading] = useState(true);
+  const [brandImages, setBrandImages] = useState<Record<string, string>>({});
 
   const brand = BRANDS.find(b => b.id === brandId);
 
@@ -23,6 +24,7 @@ export default function CategoryPage() {
     const all = getProducts();
     const filtered = all.filter(p => p.brand.toLowerCase() === (brand?.name.toLowerCase() || ''));
     setProducts(filtered);
+    setBrandImages(getBrandImages());
     setLoading(false);
   }, [brand]);
 
@@ -44,6 +46,8 @@ export default function CategoryPage() {
       </div>
     );
   }
+
+  const brandImg = brandImages[brand.id];
 
   return (
     <main className="min-h-screen bg-dark">
@@ -75,10 +79,18 @@ export default function CategoryPage() {
 
           <div className="flex items-center gap-5 mb-4">
             <div
-              className="w-20 h-20 rounded-2xl flex items-center justify-center text-5xl"
+              className="w-20 h-20 rounded-2xl flex items-center justify-center overflow-hidden"
               style={{ background: `${brand.color}22`, border: `2px solid ${brand.color}44` }}
             >
-              {brand.logo}
+              {brandImg ? (
+                <img
+                  src={brandImg}
+                  alt={brand.name}
+                  className="w-full h-full object-contain p-2"
+                />
+              ) : (
+                <span className="text-5xl">{brand.logo}</span>
+              )}
             </div>
             <div>
               <h1
