@@ -264,7 +264,7 @@ function ProductForm({ initial, onSave, onClose }: ProductFormProps) {
           className={`admin-input ${errors[name as keyof FormErrors] ? 'error' : ''}`}
         >
           <option value="">Select Brand</option>
-          {BRANDS.map(b => <option key={b.id} value={b.name}>{b.logo} {b.name}</option>)}
+          {BRANDS.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
         </select>
       ) : (
         <input
@@ -576,7 +576,12 @@ function SiteContentEditor({ onToast }: { onToast: (msg: string, type?: 'success
                     <img src={img} alt={brand.name} className="w-full h-full object-contain p-2" />
                   ) : (
                     <div className="flex flex-col items-center gap-1 text-gray-600">
-                      <span className="text-3xl">{brand.logo}</span>
+                      <img
+                        src={brand.logo}
+                        alt={brand.name}
+                        className="w-10 h-10 object-contain"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
                       <Upload className="w-4 h-4" />
                     </div>
                   )}
@@ -720,6 +725,10 @@ function SiteContentEditor({ onToast }: { onToast: (msg: string, type?: 'success
           <Field label="Phone" value={content.footerPhone} onChange={v => update('footerPhone', v)} />
           <Field label="Working Hours" value={content.footerHours} onChange={v => update('footerHours', v)} />
         </div>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Field label="Creator Name" value={content.footerCreatorName} onChange={v => update('footerCreatorName', v)} />
+          <Field label="Creator URL (Instagram/site)" value={content.footerCreatorUrl} onChange={v => update('footerCreatorUrl', v)} />
+        </div>
       </Section>
 
       {/* Save button at bottom */}
@@ -763,8 +772,17 @@ function ProductRow({
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="w-full h-full img-placeholder rounded-xl text-2xl">
-            {brand?.logo || <ImageIcon className="w-8 h-8" />}
+          <div className="w-full h-full img-placeholder rounded-xl flex items-center justify-center">
+            {brand?.logo ? (
+              <img
+                src={brand.logo}
+                alt={brand.name}
+                className="w-12 h-12 object-contain p-1"
+                onError={(e) => { e.currentTarget.replaceWith(Object.assign(document.createElement('span'), { className: 'text-xl text-white/30', textContent: brand.name[0] })); }}
+              />
+            ) : (
+              <ImageIcon className="w-8 h-8" />
+            )}
           </div>
         )}
       </div>

@@ -67,7 +67,19 @@ export default function BrandsSection() {
                     className="w-full h-full object-contain p-1"
                   />
                 ) : (
-                  <span className="text-3xl">{brand.logo}</span>
+                  <img
+                    src={brand.logo}
+                    alt={brand.name}
+                    className="w-full h-full object-contain p-1"
+                    onError={(e) => {
+                      const t = e.currentTarget;
+                      t.style.display = 'none';
+                      const span = document.createElement('span');
+                      span.className = 'text-xs font-bold text-white/60 text-center px-1';
+                      span.textContent = brand.name;
+                      t.parentElement?.appendChild(span);
+                    }}
+                  />
                 )}
               </div>
 

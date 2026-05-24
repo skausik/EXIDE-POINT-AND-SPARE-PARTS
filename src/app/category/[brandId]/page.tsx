@@ -89,7 +89,19 @@ export default function CategoryPage() {
                   className="w-full h-full object-contain p-2"
                 />
               ) : (
-                <span className="text-5xl">{brand.logo}</span>
+                <img
+                  src={brand.logo}
+                  alt={brand.name}
+                  className="w-full h-full object-contain p-2"
+                  onError={(e) => {
+                    const t = e.currentTarget;
+                    t.style.display = 'none';
+                    const span = document.createElement('span');
+                    span.className = 'text-2xl font-bold text-white/60';
+                    span.textContent = brand.name[0];
+                    t.parentElement?.appendChild(span);
+                  }}
+                />
               )}
             </div>
             <div>

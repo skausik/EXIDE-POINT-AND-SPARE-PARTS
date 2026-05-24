@@ -72,14 +72,46 @@ export interface SiteContent {
 }
 
 export const BRANDS: Brand[] = [
-  { id: 'exide', name: 'Exide', logo: '⚡', tagline: 'The Power of Expertise', color: '#CC0000' },
-  { id: 'powerzone', name: 'Powerzone', logo: '🔋', tagline: 'Zone of Maximum Power', color: '#FF6600' },
-  { id: 'amaron', name: 'Amaron', logo: '🏆', tagline: 'Last Long. Really Long.', color: '#00AA44' },
-  { id: 'eastman', name: 'Eastman', logo: '⚙️', tagline: 'Built to Last', color: '#0066CC' },
-  { id: 'okaya', name: 'Okaya', logo: '🌟', tagline: 'Power Your Dreams', color: '#9900CC' },
-  { id: 'luminous', name: 'Luminous', logo: '💡', tagline: 'Har Ghar Ki Shaan', color: '#FF9900' },
-  { id: 'livguard', name: 'Livguard', logo: '🛡️', tagline: 'Guard Your Life', color: '#006699' },
-  { id: 'microtek', name: 'Microtek', logo: '🔌', tagline: 'Smart Power Solutions', color: '#CC6600' },
+  {
+    id: 'exide', name: 'Exide',
+    logo: 'https://commons.wikimedia.org/wiki/Special:FilePath/Exide_Logo.svg',
+    tagline: 'The Power of Expertise', color: '#CC0000',
+  },
+  {
+    id: 'powerzone', name: 'Powerzone',
+    logo: 'https://www.powerzoneenergy.com/images/logo.png',
+    tagline: 'Zone of Maximum Power', color: '#FF6600',
+  },
+  {
+    id: 'amaron', name: 'Amaron',
+    logo: 'https://www.amaron.in/images/amaron-logo.png',
+    tagline: 'Last Long. Really Long.', color: '#00AA44',
+  },
+  {
+    id: 'eastman', name: 'Eastman',
+    logo: 'https://www.eastmanindustries.com/images/logo.png',
+    tagline: 'Built to Last', color: '#0066CC',
+  },
+  {
+    id: 'okaya', name: 'Okaya',
+    logo: 'https://www.okayapower.com/images/okaya-logo.png',
+    tagline: 'Power Your Dreams', color: '#9900CC',
+  },
+  {
+    id: 'luminous', name: 'Luminous',
+    logo: 'https://www.luminousindia.com/pub/static/frontend/Luminous/luminous/en_US/images/luminous-logo.svg',
+    tagline: 'Har Ghar Ki Shaan', color: '#FF9900',
+  },
+  {
+    id: 'livguard', name: 'Livguard',
+    logo: 'https://www.livguard.com/static-assets/icons/logo/livguard-logo.svg',
+    tagline: 'Guard Your Life', color: '#006699',
+  },
+  {
+    id: 'microtek', name: 'Microtek',
+    logo: 'https://www.microtekdirect.com/pub/static/frontend/Microtek/default/en_US/images/logo.png',
+    tagline: 'Smart Power Solutions', color: '#CC6600',
+  },
 ];
 
 const STORAGE_KEY = 'exide_point_products';
