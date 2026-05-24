@@ -48,7 +48,7 @@ export default function AboutSection() {
                 <Phone className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <div>
                   <div className="text-white font-semibold">Phone</div>
-                  <div className="text-gray-400 text-sm">+91 98765 43210</div>
+                  <div className="text-gray-400 text-sm">+91 8513908681</div>
                 </div>
               </div>
               <div className="flex items-start gap-3">

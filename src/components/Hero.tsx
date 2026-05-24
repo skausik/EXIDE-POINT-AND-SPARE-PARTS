@@ -11,7 +11,7 @@ const slides = [
     desc: 'Genuine batteries for cars, bikes, inverters & solar. Best prices, expert advice.',
     bg: 'from-red-950 via-dark to-dark',
     icon: '⚡',
-    badge: 'Exide Authorized Dealer',
+    badge: 'AUTHORIZED MULTI BRAND RETAILER',
   },
   {
     id: 2,
