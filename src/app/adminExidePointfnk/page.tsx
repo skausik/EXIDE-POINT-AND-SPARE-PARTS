@@ -755,7 +755,8 @@ function SiteContentEditor({ onToast }: { onToast: (msg: string, type?: 'success
         </div>
         <div className="grid sm:grid-cols-3 gap-3">
           <ContentField label="Location" value={content.aboutLocation} onChange={v => update('aboutLocation', v)} />
-          <ContentField label="Phone (display)" value={content.aboutPhone} onChange={v => update('aboutPhone', v)} />
+          <ContentField label="Phone 1" value={content.aboutPhone1} onChange={v => update('aboutPhone1', v)} />
+          <ContentField label="Phone 2" value={content.aboutPhone2} onChange={v => update('aboutPhone2', v)} />
           <ContentField label="Hours" value={content.aboutHours} onChange={v => update('aboutHours', v)} />
         </div>
       </ContentSection>

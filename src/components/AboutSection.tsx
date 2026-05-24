@@ -51,8 +51,20 @@ export default function AboutSection() {
               <div className="flex items-start gap-3">
                 <Phone className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-white font-semibold">Phone</div>
-                  <div className="text-gray-400 text-sm">{content.aboutPhone}</div>
+                 <div className="text-white font-semibold">Phone</div>
+                  <a
+                    href={`tel:${content.aboutPhone1}`}
+                    className="text-gray-400 hover:text-primary transition-colors text-sm"
+                  >
+                    {content.aboutPhone1}
+                  </a>
+                  <span className="text-gray-500">{" / "}</span>
+                  <a
+                    href={`tel:${content.aboutPhone2}`}
+                    className="text-gray-400 hover:text-primary transition-colors text-sm"
+                  >
+                    {content.aboutPhone2}
+                  </a>
                 </div>
               </div>
               <div className="flex items-start gap-3">

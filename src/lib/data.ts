@@ -57,7 +57,8 @@ export interface SiteContent {
   aboutCardTitle: string;
   aboutCardSubtitle: string;
   aboutLocation: string;
-  aboutPhone: string;
+  aboutPhone1: string;
+  aboutPhone2: string;
   aboutHours: string;
 
   // Footer
@@ -232,7 +233,7 @@ const DEFAULT_SITE_CONTENT: SiteContent = {
   heroStats: [
     { label: 'Genuine Products', value: '100%' },
     { label: 'Brands Available', value: '8+' },
-    { label: 'Years Experience', value: '10+' },
+    { label: 'Years Experience', value: '6+' },
   ],
 
   brandsSectionLabel: 'Our Collection',
@@ -265,7 +266,8 @@ const DEFAULT_SITE_CONTENT: SiteContent = {
   aboutCardTitle: 'EXIDE POINT',
   aboutCardSubtitle: '& Spare Parts',
   aboutLocation: 'Your City, West Bengal, India',
-  aboutPhone: '+91 8513908681',
+  aboutPhone1: '+91 8513908681',
+  aboutPhone2: '+91 7908278851',
   aboutHours: 'Mon–Sat: 9 AM – 8 PM',
 
   footerDesc: 'Your trusted destination for genuine batteries — cars, bikes, inverters & solar. Quality products, expert advice.',

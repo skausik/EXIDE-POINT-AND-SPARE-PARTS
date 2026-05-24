@@ -146,7 +146,7 @@ export default function Footer() {
                   >
                     {content.footerPhone1}
                   </a>
-                  {" / "}
+                  <span className="text-gray-500">{" / "}</span>
                   <a
                     href={`tel:${content.footerPhone2}`}
                     className="text-gray-500 hover:text-primary transition-colors text-xs"
