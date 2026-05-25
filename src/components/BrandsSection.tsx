@@ -58,7 +58,7 @@ export default function BrandsSection() {
                 background: `linear-gradient(135deg, ${brand.color}18 0%, ${brand.color}08 100%)`,
                 borderColor: `${brand.color}44`,
               }}
-            >\
+            >
               {/* Subtle glow background on hover */}
               <div
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
