@@ -87,12 +87,12 @@ export const BRANDS: Brand[] = [
   {
     id: 'amaron', name: 'Amaron',
     logo: 'https://www.amaron.in/images/amaron-logo.png',
-    tagline: 'Last Long. Really Long.', color: '#00AA44',
+    tagline: 'Last Long. Really Long.', color: '#08853c',
   },
   {
     id: 'eastman', name: 'Eastman',
     logo: 'https://www.eastmanindustries.com/images/logo.png',
-    tagline: 'Built to Last', color: '#0066CC',
+    tagline: 'Built to Last', color: '#f5d907',
   },
   {
     id: 'okaya', name: 'Okaya',
@@ -102,17 +102,17 @@ export const BRANDS: Brand[] = [
   {
     id: 'luminous', name: 'Luminous',
     logo: 'https://www.luminousindia.com/pub/static/frontend/Luminous/luminous/en_US/images/luminous-logo.svg',
-    tagline: 'Har Ghar Ki Shaan', color: '#FF9900',
+    tagline: 'Har Ghar Ki Shaan', color: '#0a57d1',
   },
   {
     id: 'livguard', name: 'Livguard',
     logo: 'https://www.livguard.com/static-assets/icons/logo/livguard-logo.svg',
-    tagline: 'Guard Your Life', color: '#006699',
+    tagline: 'Guard Your Life', color: '#aeb5b1',
   },
   {
     id: 'microtek', name: 'Microtek',
     logo: 'https://www.microtekdirect.com/pub/static/frontend/Microtek/default/en_US/images/logo.png',
-    tagline: 'Smart Power Solutions', color: '#CC6600',
+    tagline: 'Smart Power Solutions', color: '#5988cf',
   },
 ];
 

@@ -52,13 +52,23 @@ export default function BrandsSection() {
             <button
               key={brand.id}
               onClick={() => router.push(`/category/${brand.id}`)}
-              className="brand-card bg-dark-3 border border-white/10 rounded-2xl p-6 text-left group cursor-pointer"
-              style={{ animationDelay: `${idx * 0.08}s` }}
-            >
+              className="brand-card border rounded-2xl p-6 text-left group cursor-pointer relative overflow-hidden"
+              style={{
+                animationDelay: `${idx * 0.08}s`,
+                background: `linear-gradient(135deg, ${brand.color}18 0%, ${brand.color}08 100%)`,
+                borderColor: `${brand.color}44`,
+              }}
+            >\
+              {/* Subtle glow background on hover */}
+              <div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
+                style={{ background: `radial-gradient(circle at 30% 30%, ${brand.color}20, transparent 70%)` }}
+              />
+
               {/* Icon / image */}
               <div
-                className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-300 overflow-hidden"
-                style={{ background: `${brand.color}22`, border: `1px solid ${brand.color}44` }}
+                className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-300 overflow-hidden relative z-10"
+                style={{ background: `${brand.color}22`, border: `1px solid ${brand.color}66` }}
               >
                 {img ? (
                   <img
@@ -85,25 +95,32 @@ export default function BrandsSection() {
 
               {/* Name */}
               <h3
-                className="text-2xl text-white mb-1 group-hover:text-primary transition-colors"
-                style={{ fontFamily: 'Bebas Neue, serif', letterSpacing: '0.05em' }}
+                className="text-2xl text-white mb-1 transition-colors relative z-10"
+                style={{
+                  fontFamily: 'Bebas Neue, serif',
+                  letterSpacing: '0.05em',
+                  color: 'white',
+                }}
               >
                 {brand.name}
               </h3>
 
-              <p className="text-gray-500 text-xs tracking-wide leading-snug mb-4">
+              <p className="text-gray-400 text-xs tracking-wide leading-snug mb-4 relative z-10">
                 {brand.tagline}
               </p>
 
-              {/* CTA */}
-              <div className="flex items-center gap-1 text-xs font-bold tracking-widest uppercase text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* CTA — always visible, brightens on hover */}
+              <div
+                className="flex items-center gap-1 text-xs font-bold tracking-widest uppercase relative z-10 transition-all duration-200"
+                style={{ color: brand.color }}
+              >
                 <span>View Stock</span>
                 <ArrowRight className="w-3 h-3 translate-x-0 group-hover:translate-x-1 transition-transform" />
               </div>
 
               {/* Color accent bar */}
               <div
-                className="absolute bottom-0 left-0 right-0 h-0.5 rounded-b-2xl opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute bottom-0 left-0 right-0 h-0.5 rounded-b-2xl"
                 style={{ background: `linear-gradient(90deg, transparent, ${brand.color}, transparent)` }}
               />
             </button>
